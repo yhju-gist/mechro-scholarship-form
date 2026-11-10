@@ -107,14 +107,14 @@ function parseDate_(v) {
 }
 
 /* ---------------- 웹페이지 ---------------- */
-function doGet(e) {
-  const t = HtmlService.createTemplate(INDEX_HTML);
+function publicCfg_(e) {
   const s = settings_();
   const deadline = parseDate_(s['접수마감']);
-  t.cfg = JSON.stringify({
+  const p = (e && e.parameter) || {};
+  return {
     title: s['평가명'] || '박사재학생 장학금 연구실적 제출',
     titleEn: s['평가명(영문)'] || '',
-    lang: (e && e.parameter && e.parameter.lang === 'en') ? 'en' : ((e && e.parameter && e.parameter.lang === 'ko') ? 'ko' : ''),
+    lang: p.lang === 'en' ? 'en' : (p.lang === 'ko' ? 'ko' : ''),
     deadline: s['접수마감'] || '',
     closed: deadline ? new Date() > deadline : false,
     from: s['실적인정 시작'] ? Utilities.formatDate(parseDate_(s['실적인정 시작']), 'Asia/Seoul', 'yyyy.M.d.') : '',
@@ -125,10 +125,32 @@ function doGet(e) {
     notice: s['안내문'] || '',
     noticeEn: s['안내문(영문)'] || '',
     maxMb: Number(s['파일최대MB'] || 15)
-  });
+  };
+}
+
+function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
+
+/* 깃허브 홈페이지(index.html)가 설정을 읽어 갈 때: …/exec?action=config
+   주소만 열면: 이 웹앱 자체 화면(예비용) */
+function doGet(e) {
+  if (e && e.parameter && e.parameter.action === 'config') return json_(publicCfg_(e));
+  const t = HtmlService.createTemplate(INDEX_HTML);
+  t.cfg = JSON.stringify(publicCfg_(e));
   return t.evaluate().setTitle('장학금 연구실적 제출 · Scholarship Submission | GIST')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+}
+
+/* 깃허브 홈페이지에서 보내는 업로드·제출 */
+function doPost(e) {
+  try {
+    const req = JSON.parse(e.postData.contents);
+    if (req.action === 'uploadFile') return json_({ ok: true, data: uploadFile(req.args[0], req.args[1]) });
+    if (req.action === 'submit') return json_({ ok: true, data: submit(req.args[0]) });
+    throw new Error('알 수 없는 요청 / Unknown request');
+  } catch (err) {
+    return json_({ ok: false, error: String(err && err.message || err) });
+  }
 }
 
 /* 파일 하나 업로드 (제출 전에 하나씩 올려 용량 한도 회피) → 파일 ID 반환 */
@@ -452,7 +474,15 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
 </template>
 
 <script>
-const CFG = <?!= cfg ?>;
+/* ▼ 담당자 설정: Apps Script 웹앱 주소(…/exec)를 따옴표 안에 넣으면 제출이 켜집니다 ▼ */
+const API = '';
+/* ▲ ------------------------------------------------------------------------- ▲ */
+const CFG_TPL = <?!= cfg ?>;
+let CFG = CFG_TPL || {title:'2026학년도 박사과정 재학생 연구우수장학금',titleEn:'2026 Ph.D. Student Research Excellence Scholarship',lang:'',deadline:'2026-12-04 23:59',closed:false,from:'',to:'',profs:[],
+  contact:'기계로봇공학과 류지나 (T.2383)',contactEn:'Jina Ryu, Dept. of Mechanical and Robotics Engineering (ext. 2383)',
+  notice:'논문 첫 페이지(저자·소속이 보이는 쪽)나 논문 PDF를 꼭 올려 주세요. 아직 게재 전이면 Accept 메일을 함께 올려 주세요.',
+  noticeEn:'Please upload the first page of each paper (showing authors and affiliations) or the full PDF. If it is not yet published, also upload the acceptance email.',maxMb:15};
+const PREVIEW = !CFG_TPL && !API;
 const I18N = {
  ko:{brand:'GIST · 기계로봇공학과',lead:'논문·특허·수상 실적을 입력하고 증빙을 올려 주세요. 담당자가 증빙과 JCR로 확인합니다.',deadline:'접수마감',period:'실적인정',acceptBasis:'(Accept 기준)',
   s1:'기본 정보',s1d:'같은 학번으로 다시 제출하면 가장 마지막 제출만 반영됩니다.',sid:'학번',sidPh:'예) 20244040',sidErr:'숫자 8자리로 입력해 주세요.',name:'성명',namePh:'홍길동 (외국인은 여권 영문명)',nameErr:'성명을 입력해 주세요.',
@@ -471,7 +501,7 @@ const I18N = {
   contact:'문의',closed:'접수가 마감되었습니다',emptyP:'논문 실적이 없으면 비워 두세요.',emptyT:'특허 실적이 없으면 비워 두세요.',emptyA:'수상 실적이 없으면 비워 두세요.',
   selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
   sending:'제출하는 중',uploading:'증빙 파일을 올리고 있습니다…',upN:'증빙 파일 {i} / {n} 올리는 중',saving:'접수 기록 중…',noClose:'창을 닫지 마세요.',
-  done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기'},
+  done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기',previewBanner:'미리보기 화면입니다 — 담당자가 접수를 열면 제출할 수 있습니다.',previewErr:'아직 접수가 열리지 않았습니다.'},
  en:{brand:'GIST · Dept. of Mechanical and Robotics Engineering',lead:'Enter your papers, patents and awards and upload the evidence. The office verifies them against the documents and JCR.',deadline:'Deadline',period:'Eligible period',acceptBasis:'(by acceptance date)',
   s1:'Basic information',s1d:'If you submit again with the same student ID, only your latest submission counts.',sid:'Student ID',sidPh:'e.g. 20244040',sidErr:'Enter your 8-digit student ID.',name:'Name',namePh:'Name as in your passport',nameErr:'Enter your name.',
   course:'Program',phd:'Ph.D.',integ:'Integrated M.S.–Ph.D.',courseErr:'Choose your program.',sem:'Semester',semOpt:'(current semester)',semPh:'e.g. 4',adv:'Advisor',advPh:"Advisor's name",advErr:'Enter your advisor.',email:'Email',optional:'(optional)',
@@ -489,7 +519,7 @@ const I18N = {
   contact:'Contact',closed:'Submissions are closed',emptyP:'Leave empty if you have no papers.',emptyT:'Leave empty if you have no patents.',emptyA:'Leave empty if you have no awards.',
   selProf:'Select',etcProf:'Not in the list (type it)',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
   sending:'Submitting',uploading:'Uploading evidence files…',upN:'Uploading file {i} of {n}',saving:'Saving your submission…',noClose:'Please do not close this window.',
-  done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back'}
+  done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back',previewBanner:'Preview — submissions open once the office connects the form.',previewErr:'Submissions are not open yet.'}
 };
 let LANG = CFG.lang || new URLSearchParams(location.search).get('lang') || ((navigator.language||'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en');
 if (LANG !== 'en') LANG = 'ko';
@@ -507,7 +537,7 @@ function setLang(l){
   $('#lk').classList.toggle('on', l==='ko'); $('#le').classList.toggle('on', l==='en');
   translate(document);
   $('#title').textContent = (l==='en' && CFG.titleEn) || CFG.title;
-  const n = (l==='en' && CFG.noticeEn) || CFG.notice; $('#notice').textContent = n; $('#notice').style.display = n ? '' : 'none';
+  const n = PREVIEW ? T('previewBanner') : ((l==='en' && CFG.noticeEn) || CFG.notice); $('#notice').textContent = n; $('#notice').style.display = n ? '' : 'none';
   const c = (l==='en' && CFG.contactEn) || CFG.contact; $('#contact').textContent = c ? T('contact') + ': ' + c : '';
   fillProfs(); refresh();
 }
@@ -599,7 +629,12 @@ function collect(){
 }
 
 function readUrl(f){ return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=no; r.readAsDataURL(f); }); }
-function gs(fn, ...a){ return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); }); }
+function gs(fn, ...a){
+  if (CFG_TPL && window.google && google.script) return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); });
+  if (!API) return Promise.reject(new Error(T('previewErr')));
+  return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})})
+    .then(r => r.json()).then(j => { if (j.ok) return j.data; throw new Error(j.error); });
+}
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 async function send(){
@@ -626,7 +661,11 @@ async function send(){
     $('#go').disabled = false;
   }
 }
-init();
+(async () => {
+  if (!CFG_TPL && API){ try { const r = await fetch(API + '?action=config'); CFG = Object.assign({}, CFG, await r.json()); } catch(e) {} }
+  init();
+  if (PREVIEW){ const n = $('#notice'); n.style.display=''; n.textContent = T('previewBanner'); $('#go').disabled = true; }
+})();
 </script>
 </body>
 </html>
