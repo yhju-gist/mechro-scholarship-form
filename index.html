@@ -561,8 +561,13 @@ function readUrl(f){ return new Promise((ok,no)=>{ const r=new FileReader(); r.o
 function gs(fn, ...a){
   if (CFG_TPL && window.google && google.script) return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); });
   if (!API) return Promise.reject(new Error(T('previewErr')));
-  return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})})
-    .then(r => r.json()).then(j => { if (j.ok) return j.data; const m = String(j.error||''); if (m.startsWith('LOGIN:')) { onExpired(); throw new Error(T('sessionExp')); } throw new Error(m); });
+  const once = () => fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})}).then(r => r.json());
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // 일시적인 서버 오류(로그인 확인 실패·네트워크)는 한 번 더 시도 — 학생이 다시 인증하거나 처음부터 다시 내는 일을 줄임
+  return once().catch(() => sleep(1500).then(once)).then(j => {
+    if (!j.ok && String(j.error||'').startsWith('LOGIN:') && AUTH.exp > Date.now()) return sleep(1500).then(once);
+    return j;
+  }).then(j => { if (j.ok) return j.data; const m = String(j.error||''); if (m.startsWith('LOGIN:')) { onExpired(); throw new Error(T('sessionExp')); } throw new Error(m); });
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 

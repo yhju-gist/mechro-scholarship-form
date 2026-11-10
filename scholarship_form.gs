@@ -78,6 +78,7 @@ function setup() {
     props.setProperty('FOLDER_ID', f.getId());
   }
   if (!props.getProperty('ADMIN_KEY')) makeAdminKey();
+  tokKey_(true);
   Logger.log('시트: ' + ss.getUrl());
   Logger.log('증빙 폴더: ' + DriveApp.getFolderById(props.getProperty('FOLDER_ID')).getUrl());
 }
@@ -280,19 +281,23 @@ function verifyCode(email, code) {
   if (o.tries > 5) { c.remove('otp_' + e); throw new Error('5번 틀려 인증번호가 무효가 되었습니다. 다시 받아 주세요. / Too many attempts. Request a new code.'); }
   if (String(code || '').trim() !== o.code) { c.put('otp_' + e, JSON.stringify(o), 600); throw new Error('인증번호가 맞지 않습니다. / Incorrect code.'); }
   c.remove('otp_' + e);
-  return { token: signTok_(e, Date.now() + 6 * 3600e3), email: e, hours: 6 };
+  return { token: signTok_(e, Date.now() + 6 * 3600e3, true), email: e, hours: 6 };
 }
 
 /* 본인 확인 표 — 서버에 따로 저장하지 않고 서명으로 확인 (캐시가 지워져도 6시간 동안 유지) */
 const hex_ = bytes => bytes.map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('');
-function tokKey_() {
+function tokKey_(create) {
   const P = PropertiesService.getScriptProperties(); let k = P.getProperty('TOKEN_KEY');
-  if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); P.setProperty('TOKEN_KEY', k); }
+  if (!k && create) {   // 서명 열쇠는 처음 한 번만 만듦 (인증번호 확인 때). 확인 단계에서는 절대 새로 만들지 않음
+    const lock = LockService.getScriptLock(); lock.waitLock(10000);
+    try { k = P.getProperty('TOKEN_KEY'); if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); P.setProperty('TOKEN_KEY', k); } } finally { lock.releaseLock(); }
+  }
   return k;
 }
-function signTok_(email, exp) {
+function signTok_(email, exp, create) {
+  const key = tokKey_(create); if (!key) return '';
   const msg = email + '|' + Math.floor(exp);
-  return hex_(Utilities.newBlob(email).getBytes()) + '.' + Math.floor(exp) + '.' + hex_(Utilities.computeHmacSha256Signature(msg, tokKey_()));
+  return hex_(Utilities.newBlob(email).getBytes()) + '.' + Math.floor(exp) + '.' + hex_(Utilities.computeHmacSha256Signature(msg, key));
 }
 function who_(token) {
   const fail = () => { throw new Error('LOGIN: 본인 확인이 만료되었습니다. 다시 인증해 주세요. / Your session has expired. Please verify again.'); };
@@ -300,7 +305,7 @@ function who_(token) {
   if (!m || Number(m[2]) < Date.now()) fail();
   let email = '';
   try { email = Utilities.newBlob(m[1].match(/../g).map(h => { const v = parseInt(h, 16); return v > 127 ? v - 256 : v; })).getDataAsString(); } catch (e) { fail(); }
-  if (signTok_(email, Number(m[2])) !== m[0] || !emailOk_(email)) fail();
+  if (!/^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{3,}$/.test(email) || signTok_(email, Number(m[2])) !== m[0]) fail();
   return email;
 }
 
@@ -1116,8 +1121,13 @@ function readUrl(f){ return new Promise((ok,no)=>{ const r=new FileReader(); r.o
 function gs(fn, ...a){
   if (CFG_TPL && window.google && google.script) return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); });
   if (!API) return Promise.reject(new Error(T('previewErr')));
-  return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})})
-    .then(r => r.json()).then(j => { if (j.ok) return j.data; const m = String(j.error||''); if (m.startsWith('LOGIN:')) { onExpired(); throw new Error(T('sessionExp')); } throw new Error(m); });
+  const once = () => fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})}).then(r => r.json());
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // 일시적인 서버 오류(로그인 확인 실패·네트워크)는 한 번 더 시도 — 학생이 다시 인증하거나 처음부터 다시 내는 일을 줄임
+  return once().catch(() => sleep(1500).then(once)).then(j => {
+    if (!j.ok && String(j.error||'').startsWith('LOGIN:') && AUTH.exp > Date.now()) return sleep(1500).then(once);
+    return j;
+  }).then(j => { if (j.ok) return j.data; const m = String(j.error||''); if (m.startsWith('LOGIN:')) { onExpired(); throw new Error(T('sessionExp')); } throw new Error(m); });
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
