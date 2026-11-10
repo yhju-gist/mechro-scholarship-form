@@ -106,10 +106,45 @@ function showUrl() {
 let SS_ = null;   // 한 번 실행하는 동안 시트를 한 번만 엶 (속도)
 function ss_() { return SS_ || (SS_ = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID'))); }
 
+/* 다섯 탭을 한 번의 요청으로 읽음 (Google Sheets API 고급 서비스가 있으면 4~5배 빠름, 없으면 기존 방식) — 값은 화면에 보이는 글자 그대로 */
+const TABS_ = ['설정', '학생', '논문', '특허', '수상'];
+let ALL_ = null;
+function readAll_() {
+  if (ALL_) return ALL_;
+  ALL_ = {};
+  if (typeof Sheets !== 'undefined') {
+    try {
+      const id = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+      const r = Sheets.Spreadsheets.Values.batchGet(id, { ranges: TABS_.map(n => "'" + n + "'!A1:AZ"), valueRenderOption: 'FORMATTED_VALUE' });
+      r.valueRanges.forEach((vr, i) => {
+        const v = vr.values && vr.values.length ? vr.values : [[]], w = Math.max.apply(null, v.map(x => x.length));
+        ALL_[TABS_[i]] = v.map(row => { const a = row.slice(); while (a.length < w) a.push(''); return a; });
+      });
+      return ALL_;
+    } catch (e) { ALL_ = {}; }
+  }
+  TABS_.forEach(n => ALL_[n] = ss_().getSheetByName(n).getDataRange().getDisplayValues());
+  return ALL_;
+}
+const colA1_ = c => { let s = ''; for (c++; c > 0; c = Math.floor((c - 1) / 26)) s = String.fromCharCode(65 + (c - 1) % 26) + s; return s; };
+/* 여러 칸을 한 번의 요청으로 기록 — data: [[탭, 행(1부터), 열(0부터), 2차원 값]] */
+function writeAll_(data) {
+  if (!data.length) return;
+  if (typeof Sheets !== 'undefined') {
+    try {
+      Sheets.Spreadsheets.Values.batchUpdate({ valueInputOption: 'USER_ENTERED',
+        data: data.map(([n, r, c, vals]) => ({ range: "'" + n + "'!" + colA1_(c) + r, values: vals })) },
+        PropertiesService.getScriptProperties().getProperty('SHEET_ID'));
+      return;
+    } catch (e) { /* 아래 기존 방식으로 */ }
+  }
+  data.forEach(([n, r, c, vals]) => ss_().getSheetByName(n).getRange(r, c + 1, vals.length, vals[0].length).setValues(vals));
+}
+
 function settings_() {
   const c = CacheService.getScriptCache(), hit = c.get('settings_v1');   // 설정은 30초 동안 기억 (시트를 매번 열지 않음)
   if (hit) { const o = JSON.parse(hit); if (o.__d) Object.keys(o.__d).forEach(k => o[k] = new Date(o.__d[k])); delete o.__d; return o; }
-  const rows = ss_().getSheetByName('설정').getDataRange().getValues().slice(1);
+  const rows = readAll_()['설정'].slice(1);
   const o = {}, d = {}; rows.forEach(r => { if (r[0]) { const k = String(r[0]).trim(); o[k] = r[1]; if (r[1] instanceof Date) d[k] = r[1].getTime(); } });
   try { c.put('settings_v1', JSON.stringify(Object.assign({}, o, { __d: d })), 30); } catch (e) {}
   return o;
@@ -125,8 +160,13 @@ function tmpFolder_() {
 function parseDate_(v) {
   if (!v) return null;
   if (v instanceof Date) return v;
-  const m = String(v).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})(?:\D+(\d{1,2}):(\d{2}))?/);
-  return m ? new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 23), +(m[5] || 59)) : null;
+  // '2026-12-04 23:59', '2026. 12. 4 오후 11:59:00', '2026.12.4. 23:59' 모두 읽음 (시각이 없으면 그날 23:59)
+  const m = String(v).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})(?:\D*?(오전|오후|AM|PM)?\s*(\d{1,2}):(\d{2}))?/i);
+  if (!m) return null;
+  let h = m[5] !== undefined ? +m[5] : 23; const mi = m[6] !== undefined ? +m[6] : 59;
+  if (m[4] && /오후|PM/i.test(m[4]) && h < 12) h += 12;
+  if (m[4] && /오전|AM/i.test(m[4]) && h === 12) h = 0;
+  return new Date(+m[1], +m[2] - 1, +m[3], h, mi);
 }
 
 /* ---------------- 웹페이지 ---------------- */
@@ -298,7 +338,7 @@ function myFile(token, url) {
 }
 
 function sheetObjects_(name) {
-  const v = ss_().getSheetByName(name).getDataRange().getDisplayValues();
+  const v = readAll_()[name];
   const h = v[0];
   return v.slice(1).filter(r => r.join('') !== '').map(r => { const o = {}; h.forEach((k, i) => o[k] = r[i]); return o; });
 }
@@ -398,14 +438,12 @@ function submit(p, token) {
 
   const lock = LockService.getScriptLock(); lock.waitLock(30000); mark('lock');
   try {
-    const ss = ss_();
     const id = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyMMdd-HHmmss') + '-' + String(p.학번).slice(-4);
     const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
     const who = email;
 
     // 네 시트를 한 번씩만 읽음 (속도) — 이후 확인은 모두 이 값으로
-    const NAMES = ['학생', '논문', '특허', '수상'], SH = {}, V = {};
-    NAMES.forEach(n => { SH[n] = ss.getSheetByName(n); V[n] = SH[n].getDataRange().getValues(); });
+    const NAMES = ['학생', '논문', '특허', '수상'], V = readAll_();
     mark('read');
     const col = (n, k) => V[n][0].indexOf(k);
     const sid = String(p.학번);
@@ -474,13 +512,14 @@ function submit(p, token) {
 
     mark('files');
     // 같은 학번 이전 제출은 '대체됨' 처리 (최신 제출만 유효) → 새 줄 기록
+    const W = [];
     NAMES.forEach(n => {
-      const ci = col(n, '학번'), cs = col(n, '상태'), a1 = [];
-      for (let r = 1; r < V[n].length; r++) if (String(V[n][r][ci]).replace(/^'/, '') === sid && V[n][r][cs] === '유효') a1.push(SH[n].getRange(r + 1, cs + 1).getA1Notation());
-      if (a1.length) SH[n].getRangeList(a1).setValue('대체됨');
-      const rows = ROWS[n];
-      if (rows.length) SH[n].getRange(SH[n].getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+      const ci = col(n, '학번'), cs = col(n, '상태');
+      for (let r = 1; r < V[n].length; r++) if (String(V[n][r][ci]).replace(/^'/, '') === sid && V[n][r][cs] === '유효') W.push([n, r + 1, cs, [['대체됨']]]);
+      let last = V[n].length; while (last > 1 && V[n][last - 1].join('') === '') last--;   // 마지막 자료 줄 다음에 기록
+      if (ROWS[n].length) W.push([n, last + 1, 0, ROWS[n]]);
     });
+    writeAll_(W);
 
     try { const cc = CacheService.getScriptCache(); if (!cc.get('cleaned')) { cc.put('cleaned', '1', 3600); cleanTemp_(); } } catch (e) {}   // 1시간에 한 번만
     mark('write');
