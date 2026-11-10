@@ -300,12 +300,15 @@ function signTok_(email, exp, create) {
   return hex_(Utilities.newBlob(email).getBytes()) + '.' + Math.floor(exp) + '.' + hex_(Utilities.computeHmacSha256Signature(msg, key));
 }
 function who_(token) {
-  const fail = () => { throw new Error('LOGIN: 본인 확인이 만료되었습니다. 다시 인증해 주세요. / Your session has expired. Please verify again.'); };
+  const fail = (why) => { throw new Error('LOGIN: 본인 확인이 만료되었습니다. 다시 인증해 주세요. / Your session has expired. Please verify again. [' + (why || '') + ']'); };
   const m = String(token || '').match(/^([0-9a-f]{2,400})\.(\d{13})\.([0-9a-f]{64})$/);
-  if (!m || Number(m[2]) < Date.now()) fail();
+  if (!m) fail('f'); if (Number(m[2]) < Date.now()) fail('x');
   let email = '';
-  try { email = Utilities.newBlob(m[1].match(/../g).map(h => { const v = parseInt(h, 16); return v > 127 ? v - 256 : v; })).getDataAsString(); } catch (e) { fail(); }
-  if (!/^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{3,}$/.test(email) || signTok_(email, Number(m[2])) !== m[0]) fail();
+  try { email = Utilities.newBlob(m[1].match(/../g).map(h => { const v = parseInt(h, 16); return v > 127 ? v - 256 : v; })).getDataAsString(); } catch (e) { fail('d'); }
+  if (!/^[a-z0-9._%+-]{1,64}@[a-z0-9.-]{3,}$/.test(email)) fail('e');
+  let sig = signTok_(email, Number(m[2]));
+  if (sig !== m[0]) { Utilities.sleep(800); sig = signTok_(email, Number(m[2])); }   // 배포 직후 설정값을 늦게 읽는 경우 한 번 더
+  if (sig !== m[0]) fail(sig ? 's' : 'k');
   return email;
 }
 
