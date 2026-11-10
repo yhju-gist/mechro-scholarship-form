@@ -40,7 +40,8 @@ const DEFAULT_SETTINGS = [
   ['안내문', '논문 첫 페이지(저자·소속이 보이는 쪽)나 논문 PDF를 꼭 올려 주세요. 아직 게재 전이면 Accept 메일을 함께 올려 주세요.', '입력 화면 상단 안내'],
   ['안내문(영문)', 'Please upload the first page of each paper (showing authors and affiliations) or the full PDF. If it is not yet published, also upload the acceptance email.', '영어 화면 상단 안내'],
   ['파일최대MB', '15', '파일 1개 최대 크기'],
-  ['허용 메일 도메인', 'gist.ac.kr, gm.gist.ac.kr', '본인 확인 메일을 받을 수 있는 주소 (쉼표로 구분)']
+  ['허용 메일 도메인', 'gist.ac.kr, gm.gist.ac.kr', '본인 확인 메일을 받을 수 있는 주소 (쉼표로 구분)'],
+  ['문의 메일', 'jnryu@gist.ac.kr', '인증 메일에 답장하면 이 주소로 감 (담당자 GIST 메일)']
 ];
 
 /* ---------------- 초기 설정 ---------------- */
@@ -207,14 +208,15 @@ function requestCode(email, lang) {
   c.put('otp_' + e, JSON.stringify({ code: code, tries: 0 }), 600);
   c.put('otpwait_' + e, '1', 60); c.put(hk, String(n), 3700);
   const s = settings_();
+  const rt = String(s['문의 메일'] || 'jnryu@gist.ac.kr').trim().replace(/[<>"'\s]/g, '');
   const html = '<div style="font-family:Apple SD Gothic Neo,Malgun Gothic,sans-serif;max-width:480px;margin:0 auto;padding:28px;border:1px solid #e5e5e5;border-radius:14px">' +
     '<div style="font-size:13px;color:#DB2615;font-weight:700">GIST 기계로봇공학과 · Dept. of Mechanical and Robotics Engineering</div>' +
     '<h2 style="margin:10px 0 6px;font-size:20px;color:#1B1F23">' + String(s['평가명'] || '장학금 연구실적 제출') + '</h2>' +
     '<p style="color:#555;font-size:14px;margin:0 0 18px">본인 확인 인증번호입니다. 10분 안에 입력해 주세요.<br>Your verification code (valid for 10 minutes):</p>' +
     '<div style="font-size:34px;letter-spacing:10px;font-weight:800;color:#1B1F23;background:#F5F6F4;border-radius:10px;padding:16px;text-align:center">' + code + '</div>' +
-    '<p style="color:#888;font-size:12px;margin-top:18px">직접 요청하지 않았다면 이 메일을 무시하세요. If you did not request this, please ignore this email.<br>문의 Contact: ' + String(s['담당자'] || '') + '</p></div>';
+    '<p style="color:#888;font-size:12px;margin-top:18px">직접 요청하지 않았다면 이 메일을 무시하세요. If you did not request this, please ignore this email.<br>문의 Contact: ' + String(s['담당자'] || '') + (rt ? ' · <a href="mailto:' + rt + '" style="color:#DB2615">' + rt + '</a>' : '') + '<br>이 메일에 답장하면 담당자에게 전달됩니다. Replies to this email go to the office.</p></div>';
   MailApp.sendEmail({ to: e, name: 'GIST 기계로봇공학과 장학금 접수', subject: '[GIST 기계로봇공학과] 인증번호 ' + code + ' (Verification code)',
-    htmlBody: html, body: '인증번호 / Verification code: ' + code + ' (10분 / 10 min)' });
+    replyTo: rt, htmlBody: html, body: '인증번호 / Verification code: ' + code + ' (10분 / 10 min)' + (rt ? '\n문의 Contact: ' + rt : '') });
   return { sent: true, email: e };
 }
 
