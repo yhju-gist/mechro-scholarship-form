@@ -13,12 +13,12 @@
 const SHEETS = {
   설정: ['항목', '값', '설명'],
   학생: ['접수번호', '접수시각', '상태', '학번', '성명', '과정', '재학학기', '지도교수', '이메일', '제출계정',
-         '논문수', '특허수', '수상수', '증빙폴더', '학생메모'],
+         '논문수', '특허수', '수상수', '증빙폴더', '학생메모', '논문영문명'],
   논문: ['접수번호', '상태', '학번', '성명', '순번', '저널명(학생)', '논문제목', 'DOI', 'Accept일',
          '역할(학생)', '저자수(학생)', '증빙1', '증빙2',
          // ↓ Claude 검증 칸
          '역할(AI)', '저자수(AI)', '저자목록(AI)', 'AI근거', 'JCR정식명', 'JCR연도', '최상위카테고리',
-         '순위', '전체', '상위%', 'IF(JCR)', '다른카테고리', 'JCR상태', '검증일', '담당자확정', '담당자메모'],
+         '순위', '전체', '상위%', 'IF(JCR)', '다른카테고리', 'JCR상태', '검증일', '담당자확정', '담당자메모', 'Accept일(AI)'],
   특허: ['접수번호', '상태', '학번', '성명', '순번', '구분', '명칭', '출원·등록번호', '일자', '기여도(%)', '증빙',
          'AI확인', '담당자확정', '담당자메모'],
   수상: ['접수번호', '상태', '학번', '성명', '순번', '구분', '학회·대회명', '수상명', '일자', '증빙',
@@ -133,6 +133,7 @@ function publicCfg_(e) {
     to: s['실적인정 끝'] ? Utilities.formatDate(parseDate_(s['실적인정 끝']), 'Asia/Seoul', 'yyyy.M.d.') : '',
     profs: String(s['지도교수 목록'] || '').split(/[,，]/).map(x => x.trim()).filter(Boolean),
     contact: s['담당자'] || '',
+    contactEmail: String(s['문의 메일'] || '').trim(),
     contactEn: s['담당자(영문)'] || '',
     notice: s['안내문'] || '',
     noticeEn: s['안내문(영문)'] || '',
@@ -255,7 +256,7 @@ function myData(token) {
   const pick = (o, keys) => { const r = {}; keys.forEach(k => r[k] = o[k]); return r; };
   const by = {};
   sheetObjects_('학생').forEach(s => { if (String(s['이메일']).toLowerCase() === email)
-    by[s['접수번호']] = Object.assign(pick(s, ['접수번호', '접수시각', '상태', '학번', '성명', '과정', '재학학기', '지도교수', '학생메모']), { papers: [], patents: [], awards: [] }); });
+    by[s['접수번호']] = Object.assign(pick(s, ['접수번호', '접수시각', '상태', '학번', '성명', '논문영문명', '과정', '재학학기', '지도교수', '학생메모']), { papers: [], patents: [], awards: [] }); });
   const P = ['순번', '저널명(학생)', '논문제목', 'DOI', 'Accept일', '역할(학생)', '저자수(학생)', '증빙1', '증빙2'],
         T = ['순번', '구분', '명칭', '출원·등록번호', '일자', '기여도(%)', '증빙'],
         W = ['순번', '구분', '학회·대회명', '수상명', '일자', '증빙'];
@@ -369,6 +370,7 @@ function submit(p, token) {
   const deadline = parseDate_(s['접수마감']);
   if (deadline && new Date() > deadline) throw new Error('접수가 마감되었습니다. / Submissions are closed.');
   ['학번', '성명', '과정', '지도교수'].forEach(k => { if (!p[k] || !String(p[k]).trim()) throw new Error(k + '을(를) 입력해 주세요. / Required field missing.'); });
+  if (!/[A-Za-z]/.test(String(p.영문명 || ''))) throw new Error('논문에 쓰는 영문 이름을 입력해 주세요. / Please enter the name used in your papers.');
   if (!/^\d{8}$/.test(String(p.학번).trim())) throw new Error('학번은 숫자 8자리로 입력해 주세요. / Student ID must be 8 digits.');
 
   const lock = LockService.getScriptLock(); lock.waitLock(30000);
@@ -428,7 +430,7 @@ function submit(p, token) {
     const awards = (p.awards || []).filter(x => x.type);
 
     ss.getSheetByName('학생').appendRow([id, now, '유효', "'" + p.학번, t_(p.성명, 60), t_(p.과정, 20), t_(p.재학학기, 10), t_(p.지도교수, 40),
-      email, who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000)]);
+      email, who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000), t_(p.영문명, 80)]);
 
     papers.forEach((x, i) => ss.getSheetByName('논문').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
       t_(x.journal, 200), t_(x.title, 400), t_(x.doi, 120), t_(x.accept, 20), t_(x.role, 10), Number(x.authors) || '',
@@ -486,9 +488,9 @@ const INDEX_HTML = `<!DOCTYPE html>
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
-.hero{padding-top:58px!important;background:linear-gradient(135deg,#1B1F23 0%,#2B3330 60%,#4F5B54 100%);color:#fff;padding:44px 20px 72px;position:relative;overflow:hidden}
+.hero{padding-top:58px!important;background:linear-gradient(135deg,#1B1F23 0%,#2B3330 60%,#4F5B54 100%);color:#fff;padding:44px 16px 72px;position:relative;overflow:hidden}
 .hero:after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(220,39,21,.55),rgba(220,39,21,0) 70%)}
-.wrap{max-width:820px;margin:0 auto;position:relative;z-index:1}
+.wrap{max-width:788px;margin:0 auto;position:relative;z-index:1}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.02em;font-size:13px;opacity:.9}
 .brand i{display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--red)}
 .hero h1{font-size:28px;font-weight:800;margin:14px 0 8px;letter-spacing:-.02em;line-height:1.3}
@@ -669,12 +671,13 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
     <div class="grid">
       <div class="f" data-k="학번"><label><span data-t="sid"></span><span class="req">*</span></label><input id="학번" inputmode="numeric" maxlength="8" data-ph="sidPh"><div class="err" data-t="sidErr"></div></div>
       <div class="f" data-k="성명"><label><span data-t="name"></span><span class="req">*</span></label><input id="성명" data-ph="namePh"><div class="err" data-t="nameErr"></div></div>
+      <div class="f" data-k="영문명"><label><span data-t="ename"></span><span class="req">*</span></label><input id="영문명" autocomplete="off" data-ph="enamePh"><div class="hint" data-t="enameHint"></div><div class="err" data-t="enameErr"></div></div>
       <div class="f" data-k="과정"><label><span data-t="course"></span><span class="req">*</span></label>
         <div class="seg two"><input type="radio" name="과정" id="c1" value="박사"><label for="c1" data-t="phd"></label><input type="radio" name="과정" id="c2" value="석박통합"><label for="c2" data-t="integ"></label></div>
         <div class="err" data-t="courseErr"></div></div>
       <div class="f"><label><span data-t="sem"></span><span class="opt" data-t="semOpt"></span></label><input id="재학학기" inputmode="numeric" data-ph="semPh"></div>
       <div class="f" data-k="지도교수"><label><span data-t="adv"></span><span class="req">*</span></label><select id="지도교수Sel"></select><input id="지도교수" data-ph="advPh" style="margin-top:8px;display:none"><div class="err" data-t="advErr"></div></div>
-      <div class="f"><label><span data-t="email"></span> <span class="opt" data-t="emailVer"></span></label><input id="vEmail" readonly></div>
+      <div class="f full"><label><span data-t="email"></span> <span class="opt" data-t="emailVer"></span></label><input id="vEmail" readonly></div>
     </div>
   </section>
 
@@ -825,7 +828,7 @@ const PREVIEW = !CFG_TPL && !API;
 const I18N = {
  ko:{brand:'GIST · 기계로봇공학과',lead:'논문·특허·수상 실적을 입력하고 증빙을 올려 주세요. 담당자가 증빙과 JCR로 확인합니다.',deadline:'접수마감',period:'실적인정',acceptBasis:'(Accept 기준)',
   s1:'기본 정보',s1d:'같은 학번으로 다시 제출하면 가장 마지막 제출만 반영됩니다.',sid:'학번',sidPh:'예) 20244040',sidErr:'숫자 8자리로 입력해 주세요.',name:'성명',namePh:'홍길동 (외국인은 여권 영문명)',nameErr:'성명을 입력해 주세요.',
-  course:'과정',phd:'박사',integ:'석박통합',courseErr:'과정을 골라 주세요.',sem:'재학학기',semOpt:'(이번 학기 기준)',semPh:'예) 4',adv:'지도교수',advPh:'지도교수 성함',advErr:'지도교수를 입력해 주세요.',email:'이메일',optional:'(선택)',
+  ename:'논문 저자 표기 이름',enamePh:'예) Gildong Hong',enameHint:'논문 저자 목록에 적힌 그대로 써 주세요. 증빙에서 본인을 찾을 때 씁니다.',enameErr:'논문에 쓰는 영문 이름을 입력해 주세요.',course:'과정',phd:'박사',integ:'석박통합',courseErr:'과정을 골라 주세요.',sem:'재학학기',semOpt:'(이번 학기 기준)',semPh:'예) 4',adv:'지도교수',advPh:'지도교수 성함',advErr:'지도교수를 입력해 주세요.',email:'이메일',optional:'(선택)',
   s2:'SCI 논문',s2d:'Accept 이후 논문만 넣어 주세요. 저널 순위·IF는 담당자가 JCR에서 찾아 입력합니다.',addPaper:'＋ 논문 추가',
   s3:'특허',s3d:'출원·등록 모두 가능합니다. 기여도는 발명자 지분(%)을 적어 주세요.',addPatent:'＋ 특허 추가',
   s4:'학회·경진대회 수상',s4d:'국내·해외(국제) 학회와 경진대회 수상 실적을 넣어 주세요.',addAward:'＋ 수상 추가',
@@ -848,7 +851,7 @@ const I18N = {
   keepFile:'이전에 낸 파일 사용 (바꾸려면 새 파일 선택)',view:'보기',none:'없음',loadedEdit:'이전 제출 내용을 불러왔습니다. 고친 뒤 다시 제출하세요.',sessionExp:'본인 확인이 만료되었습니다. 다시 인증해 주세요.'},
  en:{brand:'GIST · Dept. of Mechanical and Robotics Engineering',lead:'Enter your papers, patents and awards and upload the evidence. The office verifies them against the documents and JCR.',deadline:'Deadline',period:'Eligible period',acceptBasis:'(by acceptance date)',
   s1:'Basic information',s1d:'If you submit again with the same student ID, only your latest submission counts.',sid:'Student ID',sidPh:'e.g. 20244040',sidErr:'Enter your 8-digit student ID.',name:'Name',namePh:'Name as in your passport',nameErr:'Enter your name.',
-  course:'Program',phd:'Ph.D.',integ:'Integrated M.S.–Ph.D.',courseErr:'Choose your program.',sem:'Semester',semOpt:'(current semester)',semPh:'e.g. 4',adv:'Advisor',advPh:"Advisor's name",advErr:'Enter your advisor.',email:'Email',optional:'(optional)',
+  ename:'Name as it appears in your papers',enamePh:'e.g. Gildong Hong',enameHint:'Write it exactly as in the author list. Used to find you on the evidence.',enameErr:'Please enter the name used in your papers.',course:'Program',phd:'Ph.D.',integ:'Integrated M.S.–Ph.D.',courseErr:'Choose your program.',sem:'Semester',semOpt:'(current semester)',semPh:'e.g. 4',adv:'Advisor',advPh:"Advisor's name",advErr:'Enter your advisor.',email:'Email',optional:'(optional)',
   s2:'SCI papers',s2d:'Only papers accepted for publication. You do not need to enter the JCR rank or IF — the office looks them up.',addPaper:'＋ Add a paper',
   s3:'Patents',s3d:'Both applications and registrations count. Enter your inventor share (%).',addPatent:'＋ Add a patent',
   s4:'Conference / competition awards',s4d:'Awards from domestic or international conferences and competitions.',addAward:'＋ Add an award',
@@ -889,7 +892,8 @@ function setLang(l){
   translate(document);
   $('#title').textContent = (l==='en' && CFG.titleEn) || CFG.title;
   const n = PREVIEW ? T('previewBanner') : ((l==='en' && CFG.noticeEn) || CFG.notice); $('#notice').textContent = n; $('#notice').style.display = n ? '' : 'none';
-  const c = (l==='en' && CFG.contactEn) || CFG.contact; $('#contact').textContent = c ? T('contact') + ': ' + c : '';
+  const c = (l==='en' && CFG.contactEn) || CFG.contact; $('#contact').textContent = c ? T('contact') + ': ' + c + (CFG.contactEmail ? ' · ' + CFG.contactEmail : '') : '';
+  if (CFG._dlKo) $('#dl').textContent = l==='en' ? CFG._dlEn : CFG._dlKo;
   fillProfs(); refresh();
 }
 function fillProfs(){
@@ -902,6 +906,10 @@ function fillProfs(){
 function init(){
   let dl = CFG.deadline || '-';
   if (/^\\d{4}-\\d{2}-\\d{2}T/.test(dl)) { const d = new Date(new Date(dl).getTime() + 9*3600e3); dl = d.toISOString().slice(0,16).replace('T',' '); }
+  const mm = String(dl).match(/^(\\d{4})-(\\d{2})-(\\d{2})(?:[ T](\\d{2}:\\d{2}))?/);
+  if (mm){ const dd = new Date(+mm[1], +mm[2]-1, +mm[3]); const wk = ['일','월','화','수','목','금','토'][dd.getDay()], wkE = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dd.getDay()];
+    CFG._dlKo = \`\${mm[1]}.\${+mm[2]}.\${+mm[3]}.(\${wk})\${mm[4] ? ' '+mm[4] : ''}\`;
+    CFG._dlEn = \`\${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+mm[2]-1]} \${+mm[3]}, \${mm[1]} (\${wkE})\${mm[4] ? ' '+mm[4]+' KST' : ''}\`; }
   $('#dl').textContent = dl;
   $('#range').textContent = (CFG.from && CFG.to) ? CFG.from + ' ~ ' + CFG.to : '-';
   const sel = $('#지도교수Sel');
@@ -960,6 +968,7 @@ function collect(){
   const errs = []; const P = {lang: LANG};
   P.학번 = $('#학번').value.trim(); if(!/^\\d{8}$/.test(P.학번)) errs.push(bad(document,'학번'));
   P.성명 = $('#성명').value.trim(); if(!P.성명) errs.push(bad(document,'성명'));
+  P.영문명 = $('#영문명').value.trim(); if(!/[A-Za-z]/.test(P.영문명)) errs.push(bad(document,'영문명'));
   const c = document.querySelector('input[name="과정"]:checked'); P.과정 = c ? c.value : ''; if(!P.과정) errs.push(bad(document,'과정'));
   P.재학학기 = $('#재학학기').value.trim();
   P.지도교수 = $('#지도교수').value.trim(); if(!P.지도교수) errs.push(bad(document,'지도교수'));
@@ -1097,7 +1106,7 @@ function renderMine(){
   if (!subs.length){ box.innerHTML = \`<section class="card empty-a">\${T('mineEmpty')}</section>\`; return; }
   const ev = (u,label,s) => u ? \`<button class="btn sm evbtn" type="button" data-s="mine" data-u="\${esc(u)}" data-l="\${esc(s['학번']+' '+label)}">📄 \${T('view')}</button>\` : \`<span class="sub2">\${T('none')}</span>\`;
   const card = (s, latest) => \`<section class="card">
-    <div class="mine-head"><div><div style="font-weight:800;font-size:17px">\${esc(s['성명'])} <span class="sub2">\${esc(s['학번'])}</span></div>
+    <div class="mine-head"><div><div style="font-weight:800;font-size:17px">\${esc(s['성명'])} <span class="sub2">\${esc(s['학번'])}\${s['논문영문명'] ? ' · '+esc(s['논문영문명']) : ''}</span></div>
       <div class="sub2">\${T('rcpt')} \${esc(s['접수번호'])} · \${esc(s['접수시각'])}</div></div>
       <div>\${latest ? '<span class="pill ok">'+T('mineLatest')+'</span>' : '<span class="pill old">'+T('mineOld')+'</span>'}</div></div>
     <div class="sub2" style="margin-bottom:10px">\${esc(s['과정'])} · \${esc(s['지도교수'])}</div>
@@ -1121,7 +1130,7 @@ function setKeep(item, name, url){
 function setRadio(item, v){ const r = [...item.querySelectorAll('.seg input')].find(x => x.value === v); if (r) r.checked = true; }
 function editMine(){
   const s = MINE && MINE.submissions.find(x => x['상태']==='유효'); if (!s) return;
-  $('#학번').value = s['학번']; $('#성명').value = s['성명']; $('#재학학기').value = s['재학학기'] || '';
+  $('#학번').value = s['학번']; $('#성명').value = s['성명']; $('#영문명').value = s['논문영문명'] || ''; $('#재학학기').value = s['재학학기'] || '';
   const c = [...document.querySelectorAll('input[name="과정"]')].find(x => x.value === s['과정']); if (c) c.checked = true;
   const sel = $('#지도교수Sel'); const has = [...sel.options].some(o => o.value === s['지도교수']);
   if (has){ sel.value = s['지도교수']; $('#지도교수').style.display='none'; } else { sel.value = '__etc'; $('#지도교수').style.display='block'; }
@@ -1191,7 +1200,7 @@ function renderAdmin(){
     const aws = s.awards.map(p => \`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['학회·대회명'])}<div class="sub">\${esc(p['수상명'])} \${esc(p['일자'])}</div></td><td>\${ev(p['증빙'],'증빙')}</td></tr>\`).join('');
     return \`<div class="a-row" id="ar\${i}">
       <div class="a-head" onclick="this.parentElement.classList.toggle('open')">
-        <div><div class="nm">\${esc(s['성명'])}</div><div class="sub">\${esc(s['학번'])}</div><div class="sub" style="font-size:11.5px">\${esc(s['이메일']||'')}</div></div>
+        <div><div class="nm">\${esc(s['성명'])}</div><div class="sub">\${esc(s['학번'])}\${s['논문영문명'] ? ' · '+esc(s['논문영문명']) : ''}</div><div class="sub" style="font-size:11.5px">\${esc(s['이메일']||'')}</div></div>
         <div>\${pil}\${rep}<span class="pill">\${esc(s['과정'])}</span><span class="sub">\${esc(s['재학학기'] ? s['재학학기']+'학기' : '')}</span></div>
         <div><span class="sub">지도교수</span><div>\${esc(s['지도교수'])}</div></div>
         <div class="hide-m"><span class="pill">논문 \${s.papers.length}</span><span class="pill">특허 \${s.patents.length}</span><span class="pill">수상 \${s.awards.length}</span></div>
