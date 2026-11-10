@@ -133,12 +133,34 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
 .viewer iframe{width:100%;height:100%;border:0}
 .viewer img{max-width:100%;max-height:100%}
 .empty-a{text-align:center;color:var(--mute);padding:40px 0}
+[hidden]{display:none!important}
+.mlogo{height:26px;width:auto;display:block}
+@media(max-width:640px){.mlogo{height:21px}.hero{padding-top:70px!important}}
+.hero .rule{width:44px;height:3px;background:var(--red);border-radius:3px;margin:22px 0 12px}
+.gate{max-width:560px;margin-left:auto;margin-right:auto}
+.gate .ico-l{width:46px;height:46px;border-radius:14px;background:var(--red-s);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:12px}
+.row2{display:flex;gap:8px}.row2 input{flex:1;min-width:0}.row2 .btn{white-space:nowrap}
+.code-in{font-size:24px!important;letter-spacing:10px;text-align:center;font-weight:800}
+.gnote{font-size:12.5px;color:var(--mute);margin-top:14px;line-height:1.6}
+.sess{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border-radius:14px;padding:12px 16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(27,31,35,.05);font-size:13.5px}
+.sess .who{display:flex;align-items:center;gap:8px;min-width:0}.sess .who b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sess .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);flex:none}
+.linkbtn{border:none;background:none;color:var(--mute);font:inherit;font-size:13px;cursor:pointer;text-decoration:underline}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:#E9EBEA;border-radius:12px;padding:4px;margin-bottom:16px}
+.tabs button{border:none;background:none;font:inherit;font-weight:700;font-size:14px;color:var(--gray);padding:10px;border-radius:9px;cursor:pointer}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.sub2{font-size:12.5px;color:var(--mute)}
+.mine-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.file.keep{border-style:solid;border-color:#B9C7E8;background:#EEF2FB}
+.file.keep .ico{background:#fff;color:#3F61B2}
+input[readonly]{background:#F5F6F4;color:var(--gray)}
 </style>
 </head>
 <body>
 <div class="lang"><button type="button" id="lk" onclick="setLang('ko')">한국어</button><button type="button" id="le" onclick="setLang('en')">English</button></div>
 <div class="hero"><div class="wrap">
-  <div class="brand"><i></i><span data-t="brand"></span></div>
+  <img class="mlogo" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0nMjc4JyBoZWlnaHQ9JzI0JyB2aWV3Qm94PScwIDAgMjc4IDI0JyBmaWxsPSdub25lJyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnPjxnIGNsaXAtcGF0aD0ndXJsKCNjbGlwMF80MTI2Xzg1NjQpJz48cGF0aCBkPSdNNzEuNTMzMSA1LjYwNjZMNjIuNzAzMSA1LjU5NzU2TDY5LjAxMzEgMC4wMjcwOTk2SDg2Ljg4MzFWNS41Nzk0N0g3OC4yMjMxVjI0SDcxLjUzMzFWNS42MDY2WicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNNjEuMDk3OCAxMS45ODE5QzU5LjU5NzggMTAuMjkwOSA1Ny4yOTc4IDkuMjA1NzMgNTQuNzE3OCA5LjIwNTczSDQ5LjUzNzhDNDguNDM3OCA5LjIwNTczIDQ3LjUzNzggOC40MDA5IDQ3LjUzNzggNy4zOTcxNEM0Ny41Mzc4IDYuMzkzMzcgNDguNDI3OCA1LjU4ODU1IDQ5LjUzNzggNS41ODg1NUg1Ni40Mzc4TDYyLjc1NzggMEg0OC45Mzc4QzQ0LjQyNzggMCA0MC43NTc4IDMuMzA5NzIgNDAuNzU3OCA3LjM5NzE0QzQwLjc1NzggOS4xNDI0MyA0MS40Mjc4IDEwLjc1MjEgNDIuNTU3OCAxMi4wMTgxQzQ0LjA1NzggMTMuNzA5MSA0Ni4zNTc4IDE0Ljc5NDMgNDguOTM3OCAxNC43OTQzSDU0LjExNzhDNTUuMjE3OCAxNC43OTQzIDU2LjExNzggMTUuNTk5MSA1Ni4xMTc4IDE2LjYwMjlDNTYuMTE3OCAxNy42MDY2IDU1LjIxNzggMTguNDExNSA1NC4xMTc4IDE4LjQxMTVINDAuNzU3OFYyNEg1NC43MTc4QzU5LjIzNzggMjQgNjIuODk3OCAyMC42OTAzIDYyLjg5NzggMTYuNjAyOUM2Mi44OTc4IDE0Ljg1NzYgNjIuMjI3OCAxMy4yNDc5IDYxLjA5NzggMTEuOTgxOVonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTIwLjAzIDkuNDU4OUwxNC44NyAxNC4wMTY1SDE5LjUxVjE4LjQ0NzZIMTMuOTNDMTAgMTguNDQ3NiA2LjgyIDE1LjU2MjkgNi44MiAxMi4wMTgxQzYuODIgOC40NzMyMiAxMCA1LjU4ODUyIDEzLjkzIDUuNTg4NTJIMjQuNDFMMzAuNzEgMC4wMjcwOTk2SDEzLjI2QzUuOTQgMC4wMjcwOTk2IDAgNS4zODk1NyAwIDEyLjAwOUMwIDE4LjYyODUgNS45NCAyNCAxMy4yNiAyNEgyNi4yMVY5LjQ1ODlIMjAuMDRIMjAuMDNaJyBmaWxsPScjREIyNjE1Jy8+PHBhdGggZD0nTTMwLjE0MDYgMjRIMzYuODMwNlYwLjAwOTAzMzJMMzAuMTQwNiA1Ljk0MTIxVjI0WicgZmlsbD0nd2hpdGUnLz48cGF0aCBvcGFjaXR5PScwLjMnIGQ9J00xMDAuMzgzIDJWMjInIHN0cm9rZT0nd2hpdGUnLz48cGF0aCBkPSdNMjA2LjI3NyAxLjAwNDY0VjMuMzQ4ODJIMjA2LjU0M1Y0LjI3NjE5SDIwMS45OTJWMy4zNDg4MkgyMDMuMTI2VjIuNTkzMTlIMjA0LjE5OVYzLjM0ODgySDIwNS4yMDRWMS45MzIwMUgyMDIuMjU5VjEuMDA0NjRIMjA2LjI3N1pNMjA3LjI0OCA1LjA5MTk0QzIwNy41NjUgNS40MDk2NSAyMDcuNzIgNS43OTYwNSAyMDcuNzIgNi4yNDI1NkMyMDcuNzIgNi42ODkwNyAyMDcuNTY1IDcuMDU4MzEgMjA3LjI0OCA3LjM2NzQzQzIwNi45MyA3LjY4NTE0IDIwNi41NTIgNy44Mzk3IDIwNi4xMTQgNy44Mzk3QzIwNS42NzYgNy44Mzk3IDIwNS4yOSA3LjY4NTE0IDIwNC45NzIgNy4zNjc0M0MyMDQuNjYzIDcuMDU4MzEgMjA0LjUwOCA2LjY4MDQ5IDIwNC41MDggNi4yNDI1NkMyMDQuNTA4IDUuODA0NjQgMjA0LjY2MyA1LjQwOTY1IDIwNC45NzIgNS4wOTE5NEMyMDUuMjgxIDQuNzgyODEgMjA1LjY2OCA0LjYyODI1IDIwNi4xMTQgNC42MjgyNUMyMDYuNTYxIDQuNjI4MjUgMjA2LjkzIDQuNzgyODEgMjA3LjI0OCA1LjA5MTk0Wk0yMDUuNjkzIDUuODIxODFDMjA1LjU4MiA1LjkzMzQ0IDIwNS41MyA2LjA3MDgzIDIwNS41MyA2LjI0MjU2QzIwNS41MyA2LjM5NzEzIDIwNS41OSA2LjUzNDUxIDIwNS42OTMgNi42NDYxNEMyMDUuODE0IDYuNzY2MzYgMjA1Ljk1MSA2LjgxNzg4IDIwNi4xMTQgNi44MTc4OEMyMDYuMjc3IDYuODE3ODggMjA2LjQwNiA2Ljc1Nzc3IDIwNi41MTggNi42NDYxNEMyMDYuNjM4IDYuNTI1OTMgMjA2LjY4OSA2LjM5NzEzIDIwNi42ODkgNi4yNDI1NkMyMDYuNjg5IDYuMDc5NDEgMjA2LjYyOSA1LjkzMzQ0IDIwNi41MTggNS44MjE4MUMyMDYuNDA2IDUuNzEwMTggMjA2LjI2OSA1LjY1ODY2IDIwNi4xMTQgNS42NTg2NkMyMDUuOTUxIDUuNjU4NjYgMjA1LjgwNSA1LjcxMDE4IDIwNS42OTMgNS44MjE4MVpNMjA4LjY0NyAyLjEyOTVIMjA5LjQ4OVYzLjA2NTQ2SDIwOC42NDdWNC4yNzYxOUgyMDcuNDk3VjEuMDY0NzVIMjA4LjY0N1YyLjEzODA5VjIuMTI5NVonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTIxNy4yNzcgNC43Mzk5MlY1LjcxODgxSDIxNC4wNjVWNi44ODY2MUgyMTIuOTkyVjUuNzE4ODFIMjA5Ljc4MVY0LjczOTkySDIxNy4yNzdaTTIxNS41OTQgMS4wNTYxOVYyLjA2MDg1SDIxMy43MzlMMjE2LjA5MiAzLjUyOTE4TDIxNS4zMjggNC4zMjc3NUwyMTMuNTU5IDMuMTQyNzhMMjExLjkyNyA0LjMzNjM0TDIxMS4wNjkgMy41MjkxOEwyMTMuMzI3IDIuMDUyMjZIMjExLjU5MlYxLjA0NzYxSDIxNS42MDJMMjE1LjU5NCAxLjA1NjE5WicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNMjE5LjM3NiA0Ljg4NjAxVjMuMjgwMjhIMjIwLjQ0OVY0Ljg4NjAxSDIyMi44NjJWNS44MTMzOEgyMTguMzJWNC44ODYwMUgyMTkuMzc2Wk0yMjIuNTk2IDEuMDczNDlWNC4zMDIxMUgyMjEuNTIzVjIuMDAwODZIMjE4LjU3OFYxLjA3MzQ5SDIyMi41OTZaTTIyNC45NjYgMi44MDgwMUgyMjUuODA4VjMuNzM1MzhIMjI0Ljk2NlY2Ljk5ODM1SDIyMy44MjRWMS4wNzM0OUgyMjQuOTY2VjIuODA4MDFaJyBmaWxsPSd3aGl0ZScvPjxwYXRoIGQ9J00yMjYuNzAzIDIuMDYwOTRWMS4wNjQ4OEgyMjguMjE0VjAuMzI2NDE2SDIyOS4yODhWMS4wNjQ4OEgyMzAuNzlWMi4wNjA5NEgyMzAuMjE1QzIzMC4yNSAyLjE2Mzk4IDIzMC4yNzUgMi4yNTg0NCAyMzAuMzAxIDIuMzYxNDhDMjMwLjMyNyAyLjQ3MzExIDIzMC4zMzUgMi41ODQ3MyAyMzAuMzM1IDIuNjk2MzZDMjMwLjMzNSAzLjEyNTcgMjMwLjE4MSAzLjUwMzUyIDIyOS44NzIgMy44MTI2NEMyMjkuNTYzIDQuMTMwMzUgMjI5LjE4NSA0LjI5MzUgMjI4Ljc0NyA0LjI5MzVDMjI4LjMwOSA0LjI5MzUgMjI3LjkyMyA0LjEzMDM1IDIyNy42MTMgMy44MTI2NEMyMjcuMzA0IDMuNTAzNTIgMjI3LjE1OCAzLjEyNTcgMjI3LjE1OCAyLjY5NjM2QzIyNy4xNTggMi41NzYxNSAyMjcuMTY3IDIuNDY0NTIgMjI3LjE4NCAyLjM2MTQ4QzIyNy4yMSAyLjI1ODQ0IDIyNy4yNDQgMi4xNjM5OCAyMjcuMjg3IDIuMDYwOTRIMjI2LjcxMkgyMjYuNzAzWk0yMzMuMTQzIDQuODA4NzFWNi45NTU0SDIzMi4wN1Y1Ljc0NDY2SDIyNi45NDRWNC44MTcyOUgyMzMuMTQzVjQuODA4NzFaTTIyOC4zNDMgMi4zMDk5NkMyMjguMjMyIDIuNDEzIDIyOC4xNzIgMi41NTAzOSAyMjguMTcyIDIuNzA0OTVDMjI4LjE3MiAyLjg1OTUxIDIyOC4yMjMgMi45ODgzMSAyMjguMzQzIDMuMDk5OTRDMjI4LjQ1NSAzLjIyMDE1IDIyOC41OTIgMy4yNzE2OCAyMjguNzU1IDMuMjcxNjhDMjI4LjkwMSAzLjI3MTY4IDIyOS4wMzkgMy4yMTE1NyAyMjkuMTUgMy4wOTk5NEMyMjkuMjYyIDIuOTg4MzEgMjI5LjMyMiAyLjg1OTUxIDIyOS4zMjIgMi43MDQ5NUMyMjkuMzIyIDIuNTUwMzkgMjI5LjI2MiAyLjQyMTU5IDIyOS4xNSAyLjMwOTk2QzIyOS4wMzkgMi4xOTgzMyAyMjguOTEgMi4xNDY4MSAyMjguNzU1IDIuMTQ2ODFDMjI4LjU5MiAyLjE0NjgxIDIyOC40NTUgMi4xOTgzMyAyMjguMzQzIDIuMzA5OTZaTTIzMy4xNDMgMi4xMjk2NEgyMzMuOTg1VjMuMDY1NTlIMjMzLjE0M1Y0LjI3NjMzSDIzMi4wN1YxLjA1NjI5SDIzMy4xNDNWMi4xMjk2NFonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTIzOC40MzkgMS4wNzM0OVY0LjI4NDk0SDIzNy4zNjVWMi4wMDA4NkgyMzQuNjk1VjEuMDczNDlIMjM4LjQzOVpNMjM5LjcwOSAxLjA3MzQ5SDI0MC43ODNWNi45Mjk2NkgyMzkuNzA5VjEuMDczNDlaJyBmaWxsPSd3aGl0ZScvPjxwYXRoIGQ9J00yNDkuMzAxIDMuMjExNDVWNC4xNDc0MUgyNDYuMDlWNC42NTQwM0gyNDguNzc3VjYuNjk3NjdIMjQzLjQyOFY3LjAyMzk3SDI0OC44MDNWNy44OTk4MkgyNDIuMzU0VjUuODIxODJIMjQ3LjcwNFY1LjUyMTI5SDI0Mi4zNTRWNC42NDU0NEgyNDUuMDI1VjQuMTM4ODJIMjQxLjgxMlYzLjIwMjg2SDI0OS4zMUwyNDkuMzAxIDMuMjExNDVaTTI0Ni45MTMgMi43MDQ4M0wyNDUuNTU3IDEuMjcwODRMMjQ0LjIgMi43MDQ4M0wyNDMuMzQyIDIuMDUyMjRMMjQ1LjM0MiAwSDI0NS43NzlMMjQ3Ljc4MSAyLjAzNTA2TDI0Ni45MjIgMi43MDQ4M0gyNDYuOTEzWicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNMjU0LjY3NiAzLjM1NzQyVjQuMjc2MjFIMjUyLjkzM1Y1LjEwMDU0SDI1MS44NlY0LjI3NjIxSDI1MC4xMTdWMy4zNTc0MkgyNTQuNjY4SDI1NC42NzZaTTI1MS42NTQgNi4wNDUwOEgyNTcuMTkyVjYuOTgxMDRIMjUwLjU4VjUuMjAzNThIMjUxLjY1NFY2LjA0NTA4Wk0yNTMuNTM0IDAuNDcyMjcyQzI1My44NTIgMC43ODk5ODIgMjU0LjAxNSAxLjE2NzggMjU0LjAxNSAxLjYxNDMxQzI1NC4wMTUgMi4wNjA4MiAyNTMuODUyIDIuNDMwMDUgMjUzLjUzNCAyLjc0Nzc2QzI1My4yMjUgMy4wNjU0NyAyNTIuODQ3IDMuMjIwMDQgMjUyLjQwMSAzLjIyMDA0QzI1MS45NTQgMy4yMjAwNCAyNTEuNTc2IDMuMDY1NDcgMjUxLjI1OSAyLjc0Nzc2QzI1MC45NSAyLjQzODY0IDI1MC43OTUgMi4wNjA4MiAyNTAuNzk1IDEuNjE0MzFDMjUwLjc5NSAxLjE2NzggMjUwLjk1IDAuNzg5OTgyIDI1MS4yNTkgMC40NzIyNzJDMjUxLjU3NiAwLjE2MzE0OCAyNTEuOTU0IDAgMjUyLjQwMSAwQzI1Mi44NDcgMCAyNTMuMjE3IDAuMTU0NTYyIDI1My41MzQgMC40NzIyNzJaTTI1MS45OCAxLjE3NjM5QzI1MS44NjggMS4yOTY2IDI1MS44MTcgMS40MzM5OSAyNTEuODE3IDEuNTk3MTRDMjUxLjgxNyAxLjc2MDI5IDI1MS44NzcgMS44ODkwOSAyNTEuOTggMi4wMDA3MkMyNTIuMSAyLjEyMDkzIDI1Mi4yMzggMi4xODEwNCAyNTIuNDAxIDIuMTgxMDRDMjUyLjU2NCAyLjE4MTA0IDI1Mi43MDEgMi4xMjA5MyAyNTIuODEzIDIuMDAwNzJDMjUyLjkzMyAxLjg4OTA5IDI1Mi45OTMgMS43NTE3IDI1Mi45OTMgMS41OTcxNEMyNTIuOTkzIDEuNDQyNTggMjUyLjkzMyAxLjI5NjYgMjUyLjgxMyAxLjE3NjM5QzI1Mi43MDEgMS4wNjQ3NiAyNTIuNTY0IDEuMDEzMjQgMjUyLjQwMSAxLjAxMzI0QzI1Mi4yMzggMS4wMTMyNCAyNTIuMSAxLjA2NDc2IDI1MS45OCAxLjE3NjM5Wk0yNTcuMTg0IDEuMDU2MTdWNC4yNjc2MkgyNTYuMTFWMy4wNTY4OUgyNTQuOTQyVjIuMTI5NTJIMjU2LjExVjEuMDU2MTdIMjU3LjE4NFonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTE3Ny40OTIgMTIuMjI3NUgxNzEuNTE2VjIwLjIzOUgxNzcuNDkyVjEyLjIyNzVaJyBmaWxsPSd3aGl0ZScvPjxwYXRoIGQ9J00xOTIuMDEzIDkuMzE2NjVIMTcxLjUxNlYxNC40MzQ0SDE5Mi4wMTNWOS4zMTY2NVonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTE5Mi4wMTMgMTguODEzN0gxNzEuNTE2VjI0LjAwMDFIMTkyLjAxM1YxOC44MTM3WicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNMTkyLjAxMyAwLjEzNzQ1MUgxNzEuNTE2VjUuMzQ5NjJIMTkyLjAxM1YwLjEzNzQ1MVonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTEzMy4wMDIgMC4wOTQ0ODI0TDEyNS45MTggMTAuMjA5N0wxMTguODM0IDAuMDk0NDgyNEgxMTIuODgzVjI0SDExOC44NTlWOS45MDA1NkwxMjUuODA2IDE4LjgwNUwxMjUuOTE4IDE4Ljk1MUwxMjYuMDI5IDE4LjgwNUwxMzIuOTc2IDkuOTAwNTZWMjRIMTM4Ljk1MlYwLjA5NDQ4MjRIMTMzLjAwMlonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTE0Mi42NDEgMTcuMjE2NlYxOC45ODU0VjI0LjAwMDFIMTQ4LjU5MVYxOC45ODU0VjEyLjk3NDdWMTAuNjk5MkwxNDIuNjQxIDE1LjE5MDFWMTcuMjE2NlonIGZpbGw9JyNEQjI2MTUnLz48cGF0aCBkPSdNMTY3LjQxMiA0LjczMTM3QzE2Ni45NzQgMy41NjM1NyAxNjYuMjc5IDIuNjE5MDMgMTY1LjMzNSAxLjg5Nzc0QzE2NC41MzYgMS4yNDUxNCAxNjMuNjE2IDAuNzcyODcyIDE2Mi41OTQgMC40ODA5MjJDMTYxLjkxNiAwLjI5MjAxMyAxNjEuMTg3IDAuMTcxNzk4IDE2MC40MDYgMC4xMzc0NTFIMTQyLjMxMkwxNDguNTcyIDguNzQ5OTdWNS4zNDk2MkgxNTEuODA5VjUuMzY2NzlIMTU0LjM4NUgxNTkuNDg2QzE1OS42MDYgNS4zNjY3OSAxNTkuODA0IDUuMzgzOTYgMTYwLjAwMSA1LjQxODMxQzE2MC4wMzYgNS40MTgzMSAxNjAuMDYxIDUuNDM1NDggMTYwLjA5NiA1LjQ0NDA3QzE2MC4xMDQgNS40NDQwNyAxNjAuMTIxIDUuNDQ0MDcgMTYwLjEzIDUuNDQ0MDdDMTYwLjM4OCA1LjUyMTM1IDE2MC42MTIgNS42MzI5OCAxNjAuODE4IDUuNzYxNzhDMTYwLjgzNSA1Ljc3MDM3IDE2MC44NDQgNS43Nzg5NSAxNjAuODYxIDUuNzk2MTNDMTYwLjkzOCA1Ljg0NzY1IDE2MS4wMDcgNS45MDc3NiAxNjEuMDc2IDUuOTc2NDVDMTYxLjA5MyA1Ljk5MzYyIDE2MS4xMTcgNi4wMTkzOCAxNjEuMTM1IDYuMDM2NTZDMTYxLjM0OSA2LjI1OTgxIDE2MS41MDUgNi41MjYgMTYxLjYxNyA2Ljg1MjNDMTYxLjY1MSA2Ljk2MzkzIDE2MS42ODQgNy4wNzU1NSAxNjEuNzEgNy4xOTU3N0MxNjEuNzE5IDcuMjQ3MjkgMTYxLjcyNyA3LjI5ODgxIDE2MS43NDQgNy4zNTAzM0MxNjEuNzQ0IDcuMzkzMjcgMTYxLjc2MiA3LjQyNzYxIDE2MS43NjIgNy40NzA1NUMxNjEuNzc5IDcuNTk5MzUgMTYxLjc4NyA3LjcyODE1IDE2MS43ODcgNy44NjU1NEMxNjEuNzYyIDkuMjMwODMgMTYxLjIwMyAxMC4wNzIzIDE2MC4xMjEgMTAuMzk4NkMxNjAuMTEzIDEwLjM5ODYgMTYwLjEwNCAxMC4zOTg2IDE2MC4wODcgMTAuMzk4NkMxNjAuMDQ0IDEwLjQwNzIgMTYwLjAwMiAxMC40MjQ0IDE1OS45NTEgMTAuNDMzQzE1OS43NzkgMTAuNDU4NyAxNTkuNjA2IDEwLjQ2NzMgMTU5LjUwMyAxMC40NzU5SDE1MS44MDlWMTAuNDkzMUgxNTAuNzE5TDE1MS4wNTUgMTAuOTY1NEwxNTQuNDIxIDE1LjY5NjdMMTYwLjMwMiAyMy45NzQzSDE2Ny41NjZMMTYxLjYxNyAxNS41Njc5QzE2MS45NTEgMTUuNTE2MyAxNjIuMjc3IDE1LjQzOTEgMTYyLjU5NCAxNS4zNTMyQzE2My41NjUgMTUuMDc4NCAxNjQuNDIzIDE0LjY0MDUgMTY1LjE4OCAxNC4wMzk0QzE2Ni40MjQgMTMuMTU1IDE2Ny4yNTcgMTEuOTA5OSAxNjcuNjYxIDEwLjMxMjhDMTY3LjY2MSAxMC4yOTU2IDE2Ny42NjEgMTAuMjg3IDE2Ny42NjkgMTAuMjY5OEMxNjcuNzA0IDEwLjE1ODIgMTY3LjcyOSAxMC4wNDY2IDE2Ny43NTUgOS45MjYzNkMxNjcuNzg5IDkuNzQ2MDQgMTY3LjgyNCA5LjU2NTcyIDE2Ny44NSA5LjM4NTM5QzE2Ny44NSA5LjM1OTYzIDE2Ny44NSA5LjMzMzg3IDE2Ny44NTggOS4yOTk1M0MxNjcuODg0IDkuMTAyMDMgMTY3LjkxIDguOTA0NTQgMTY3LjkyNyA4LjY5ODQ1QzE2Ny45MjcgOC42MTI1OSAxNjcuOTM2IDguNTI2NzIgMTY3Ljk0NSA4LjQ0MDg1QzE2Ny45NDUgOC4zODA3NCAxNjcuOTQ1IDguMzI5MjIgMTY3Ljk0NSA4LjI2OTExQzE2Ny45NDUgOC4xNDAzMSAxNjcuOTQ1IDguMDExNTEgMTY3Ljk0NSA3Ljg4MjcxQzE2Ny45MTkgNi42ODkxNSAxNjcuNzMgNS42MzI5OCAxNjcuMzg3IDQuNzE0MkwxNjcuNDEyIDQuNzMxMzdaJyBmaWxsPScjREIyNjE1Jy8+PHBhdGggZD0nTTI3Mi4wMjUgMTQuMDUxN0gyNjguMTdWMTIuNjgyNEgyNzMuNjAxVjE2Ljg1OTRDMjczLjYwMSAxNy43NTcgMjczLjUyMSAxOC44NjE2IDI3My4zNiAxOS41NTJIMjcxLjgxOEMyNzEuOTU2IDE4Ljg3MzEgMjcyLjAyNSAxNy45MTgxIDI3Mi4wMjUgMTcuMTAxMVYxNC4wNTE3Wk0yNzAuNzk0IDE2LjUwMjdWMjEuMTE3SDI3My4wMDNDMjczLjg1NCAyMS4xMTcgMjc0LjQ3NiAyMC45Nzg5IDI3NC44MSAyMC42Nzk3VjEyLjQ5ODNIMjc2LjM4NlYxNi42ODY4SDI3Ny45NzRWMTguMDQ0NkgyNzYuMzg2VjIzLjA2MTdIMjc0LjgxVjIxLjk2ODVDMjc0LjQ2NCAyMi4zMTM3IDI3My42OTMgMjIuNDg2MyAyNzIuNjkyIDIyLjQ4NjNIMjY3Ljg1OVYyMS4xMTdIMjY5LjIxN1YxNi41MDI3SDI3MC43OTRaJyBmaWxsPSd3aGl0ZScvPjxwYXRoIGQ9J00yNTguODI5IDEyLjE4NzZIMjYwLjQwNlYxMy4xODg3SDI2Mi41ODFWMTQuNDc3NUgyNTYuNTYyVjEzLjE4ODdIMjU4LjgyOVYxMi4xODc2Wk0yNTYuODczIDE2LjkyODVDMjU2Ljg3MyAxNi4yNzI2IDI1Ny4xODQgMTUuNzQzMyAyNTcuNjY3IDE1LjM4NjZDMjU4LjE1IDE1LjA0MTMgMjU4LjgxOCAxNC44NTcyIDI1OS41ODkgMTQuODU3MkMyNjAuMzcxIDE0Ljg1NzIgMjYxLjAzOSAxNS4wNDEzIDI2MS41MSAxNS4zODY2QzI2Mi4wMDUgMTUuNzQzMyAyNjIuMzE2IDE2LjI3MjYgMjYyLjMxNiAxNi45Mjg1QzI2Mi4zMTYgMTcuNTg0NCAyNjIuMDA1IDE4LjExMzcgMjYxLjUxIDE4LjQ3MDRDMjYxLjAzOSAxOC44MTU2IDI2MC4zNzEgMTguOTk5NyAyNTkuNTg5IDE4Ljk5OTdDMjU4LjgxOCAxOC45OTk3IDI1OC4xNSAxOC44MTU2IDI1Ny42NjcgMTguNDcwNEMyNTcuMTg0IDE4LjExMzcgMjU2Ljg3MyAxNy41ODQ0IDI1Ni44NzMgMTYuOTI4NVpNMjU4LjM5MiAxNi45Mjg1QzI1OC4zOTIgMTcuMTQ3MSAyNTguNDg0IDE3LjMzMTIgMjU4LjY1NyAxNy40NjkzQzI1OC44NzUgMTcuNjUzNCAyNTkuMjA5IDE3Ljc1NyAyNTkuNTg5IDE3Ljc1N0MyNTkuOTggMTcuNzU3IDI2MC4zMDIgMTcuNjUzNCAyNjAuNTMyIDE3LjQ2OTNDMjYwLjcwNSAxNy4zMzEyIDI2MC43OTcgMTcuMTQ3MSAyNjAuNzk3IDE2LjkyODVDMjYwLjc5NyAxNi43MDk5IDI2MC43MDUgMTYuNTI1NyAyNjAuNTMyIDE2LjM4NzdDMjYwLjMwMiAxNi4yMDM1IDI1OS45OCAxNi4xIDI1OS41ODkgMTYuMUMyNTkuMjA5IDE2LjEgMjU4Ljg3NSAxNi4yMDM1IDI1OC42NTcgMTYuMzg3N0MyNTguNDg0IDE2LjUyNTcgMjU4LjM5MiAxNi43MDk5IDI1OC4zOTIgMTYuOTI4NVpNMjY1LjM0MiAxNS4wNzU5SDI2Ni44MDRWMTYuNDQ1MkgyNjUuMzQyVjE4Ljk5OTdIMjYzLjc2NlYxMi40OTgzSDI2NS4zNDJWMTUuMDc1OVpNMjY1LjM0MiAxOS40OTQ1VjIzLjIzNDNIMjYzLjc2NlYyMC44NTI0SDI1Ny4zNjhWMTkuNDk0NUgyNjUuMzQyWicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNMjUyLjkyNSAxMy45ODI3SDI0Ni4yNjJWMTIuNjI0OUgyNTQuNTAxVjE0LjY5NjFDMjU0LjUwMSAxNS4zMTc1IDI1NC40NTUgMTUuOTYxOSAyNTQuMzE3IDE2LjQxMDdIMjUyLjc3NUMyNTIuODkgMTUuOTYxOSAyNTIuOTI1IDE1LjM0MDUgMjUyLjkyNSAxNC43NjUyVjEzLjk4MjdaTTI0NS42NjQgMTYuOTRIMjQ4LjcyNVYxNC45MTQ4SDI1MC4zMDFWMTYuOTRIMjU1LjE2OVYxOC4zMDkzSDI0NS42NjRWMTYuOTRaTTI0Ni4xNDcgMjEuMTk3NkMyNDYuMTQ3IDIwLjQyNjYgMjQ2LjUzOSAxOS45MjAzIDI0Ny4xOTQgMTkuNTg2NkMyNDcuOTg4IDE5LjE4MzggMjQ5LjE3NCAxOS4wNDU4IDI1MC40MjggMTkuMDQ1OEMyNTEuNjgyIDE5LjA0NTggMjUyLjg2NyAxOS4xODM4IDI1My42NjEgMTkuNTg2NkMyNTQuMzE3IDE5LjkyMDMgMjU0LjcwOSAyMC40MjY2IDI1NC43MDkgMjEuMTk3NkMyNTQuNzA5IDIxLjk4IDI1NC4zMTcgMjIuNDg2MyAyNTMuNjYxIDIyLjgyQzI1Mi44NjcgMjMuMjIyOCAyNTEuNjgyIDIzLjM2MDkgMjUwLjQyOCAyMy4zNjA5QzI0OS4xNzQgMjMuMzYwOSAyNDcuOTg4IDIzLjIyMjggMjQ3LjE5NCAyMi44MkMyNDYuNTM5IDIyLjQ4NjMgMjQ2LjE0NyAyMS45OCAyNDYuMTQ3IDIxLjE5NzZaTTI0Ny43MjQgMjEuMTk3NkMyNDcuNzI0IDIxLjQyNzcgMjQ3Ljg1IDIxLjYwMDMgMjQ4LjA5MiAyMS43MTU0QzI0OC41MjkgMjEuOTU3IDI0OS4zNDYgMjIuMDI2MSAyNTAuNDI4IDIyLjAyNjFDMjUxLjUxIDIyLjAyNjEgMjUyLjMyNyAyMS45NTcgMjUyLjc2NCAyMS43MTU0QzI1My4wMDUgMjEuNjAwMyAyNTMuMTMyIDIxLjQyNzcgMjUzLjEzMiAyMS4xOTc2QzI1My4xMzIgMjAuOTc4OSAyNTMuMDA1IDIwLjgwNjMgMjUyLjc2NCAyMC42Nzk3QzI1Mi4zMjcgMjAuNDQ5NiAyNTEuNTEgMjAuMzgwNiAyNTAuNDI4IDIwLjM4MDZDMjQ5LjM0NiAyMC4zODA2IDI0OC41MjkgMjAuNDQ5NiAyNDguMDkyIDIwLjY3OTdDMjQ3Ljg1IDIwLjgwNjMgMjQ3LjcyNCAyMC45Nzg5IDI0Ny43MjQgMjEuMTk3NlonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTI0MS44NzggMTMuNjE0NVYxMi42MjQ5SDI0My40NTVWMTcuMDU1MUgyNDAuMTI5VjE3LjgyNkgyNDQuMTIyVjE5LjE3MjNIMjM0LjYxN1YxNy44MjZIMjM4LjU2NFYxNy4wNTUxSDIzNS4yODVWMTIuNjI0OUgyMzYuODYxVjEzLjYxNDVIMjQxLjg3OFpNMjQxLjg3OCAxNC45Mzc4SDIzNi44NjFWMTUuNzMxOEgyNDEuODc4VjE0LjkzNzhaTTIzOS4zNTggMjEuODk5NUMyMzguMzggMjIuNzYyNSAyMzYuNjE5IDIzLjE0MjIgMjM0LjkwNSAyMy4xNzY3VjIxLjg0MTlDMjM2Ljg1IDIxLjc3MjkgMjM4LjU2NCAyMS4yMDkxIDIzOC41NjQgMTkuODk3M1YxOS43MjQ3SDI0MC4xNDFWMTkuODk3M0MyNDAuMTQxIDIxLjE5NzYgMjQxLjg1NSAyMS43MjY5IDI0My44MTEgMjEuODQxOVYyMy4xNzY3QzI0MS45ODIgMjMuMTY1MiAyNDAuMzI1IDIyLjczOTUgMjM5LjM1OCAyMS44OTk1WicgZmlsbD0nd2hpdGUnLz48cGF0aCBkPSdNMjI1LjczMSAxOC4xMzY3SDIzMi42VjE5LjUwNjFIMjI5LjEyNVYyMS4yMzIxSDIzMy4wMTVWMjIuNjAxNEgyMjMuNjI1VjIxLjIzMjFIMjI3LjU2VjE5LjUwNjFIMjI0LjE1NFYxNS4zODY2SDIzMC45MDlWMTQuMDUxOEgyMjQuMTU0VjEyLjY4MjRIMjMyLjQ4NVYxNi43NTU5SDIyNS43MzFWMTguMTM2N1onIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTIxNS4zMTIgMTYuMDg4NVYxNC4wNTE3SDIxMi44NjFWMTIuNjgyNEgyMTYuODU0VjE0Ljg0NTdIMjE3LjkwMVYxMi41NTU4SDIxOS40MlYyMi45MzUxSDIxNy45MDFWMTkuNzkzN0gyMTYuMTI5QzIxNS40OTYgMjEuMDk0IDIxNC40MDMgMjIuMDE0NSAyMTIuNzM0IDIyLjQ4NjNWMjAuOTU1OUMyMTQuMzQ1IDIwLjM5MjEgMjE1LjMxMiAxOC44MDQxIDIxNS4zMTIgMTYuMDg4NVpNMjE2Ljg1NCAxNi4yMTVDMjE2Ljg0MiAxNy4wMjA1IDIxNi43NjIgMTcuNzU3IDIxNi42MDEgMTguNDM1OUgyMTcuOTAxVjE2LjIxNUgyMTYuODU0Wk0yMjAuMDQxIDIzLjA2MTdWMTIuNDk4M0gyMjEuNTcyVjIzLjA2MTdIMjIwLjA0MVonIGZpbGw9J3doaXRlJy8+PHBhdGggZD0nTTIwNS41MDYgMTQuOTk1M1YxNC4wNTE3SDIwMS44N1YxMi42ODI0SDIwNy4wNzFWMTQuODExMkMyMDcuMDcxIDE4LjgyNzEgMjA1LjYyMSAyMS41MzEyIDIwMS44MTIgMjIuNDg2M1YyMC45OTA0QzIwNC40MzYgMjAuMjMxIDIwNS41MDYgMTguMTEzNyAyMDUuNTA2IDE0Ljk5NTNaTTIxMC4zNzQgMjMuMDYxN0gyMDguNzk3VjEyLjQ5ODNIMjEwLjM3NFYyMy4wNjE3WicgZmlsbD0nd2hpdGUnLz48L2c+PGRlZnM+PGNsaXBQYXRoIGlkPSdjbGlwMF80MTI2Xzg1NjQnPjxyZWN0IHdpZHRoPScyNzgnIGhlaWdodD0nMjQnIGZpbGw9J3doaXRlJy8+PC9jbGlwUGF0aD48L2RlZnM+PC9zdmc+" alt="GIST 기계로봇공학과">
+  <div class="rule"></div>
   <h1 id="title"></h1>
   <p data-t="lead"></p>
   <div class="chips">
@@ -149,6 +171,24 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
 
 <main id="app">
   <div class="notice" id="notice"></div>
+
+  <section class="card gate" id="gate" hidden>
+    <div class="ico-l">✉</div>
+    <h2 data-t="gateT"></h2>
+    <p class="desc" data-t="gateD"></p>
+    <div class="f" id="gEmailBox"><label data-t="gEmail"></label>
+      <div class="row2"><input id="gEmail" type="email" autocomplete="email" placeholder="id@gm.gist.ac.kr"><button class="btn red" type="button" id="gSend" onclick="sendCode()" data-t="gSend"></button></div>
+      <div class="err" id="gErr1"></div></div>
+    <div class="f" id="gCodeBox" hidden style="margin-top:14px"><label data-t="gCode"></label>
+      <div class="row2"><input id="gCode" class="code-in" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······"><button class="btn red" type="button" id="gVerify" onclick="checkCode()" data-t="gVerify"></button></div>
+      <div class="hint" id="gHint"></div><div class="err" id="gErr2"></div></div>
+    <p class="gnote" data-t="gNote"></p>
+  </section>
+
+  <div class="sess" id="sess" hidden><div class="who"><span class="dot"></span><b id="sEmail"></b><span class="sub2" data-t="verified"></span></div><button class="linkbtn" type="button" onclick="logout()" data-t="logout"></button></div>
+  <div class="tabs" id="tabs" hidden><button type="button" data-tab="form" class="on" onclick="showTab('form')" data-t="tabForm"></button><button type="button" data-tab="mine" onclick="showTab('mine')" data-t="tabMine"></button></div>
+  <div id="mineArea" hidden></div>
+  <div id="formArea" hidden>
 
   <section class="card">
     <h2><span class="num">1</span><span data-t="s1"></span></h2>
@@ -161,7 +201,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
         <div class="err" data-t="courseErr"></div></div>
       <div class="f"><label><span data-t="sem"></span><span class="opt" data-t="semOpt"></span></label><input id="재학학기" inputmode="numeric" data-ph="semPh"></div>
       <div class="f" data-k="지도교수"><label><span data-t="adv"></span><span class="req">*</span></label><select id="지도교수Sel"></select><input id="지도교수" data-ph="advPh" style="margin-top:8px;display:none"><div class="err" data-t="advErr"></div></div>
-      <div class="f"><label><span data-t="email"></span><span class="opt" data-t="optional"></span></label><input id="이메일" type="email" placeholder="you@gm.gist.ac.kr"></div>
+      <div class="f"><label><span data-t="email"></span> <span class="opt" data-t="emailVer"></span></label><input id="vEmail" readonly></div>
     </div>
   </section>
 
@@ -191,6 +231,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
     <div class="f" style="margin-bottom:14px"><label><span data-t="memo"></span><span class="opt" data-t="optional"></span></label><textarea id="메모" rows="2" data-ph="memoPh"></textarea></div>
     <label class="check" id="agreeBox"><input type="checkbox" id="agree"><span data-t="agree"></span></label>
   </section>
+  </div>
   <footer id="contact"></footer>
   <a class="adminlink" href="#admin">관리자</a>
 </main>
@@ -326,7 +367,12 @@ const I18N = {
   contact:'문의',closed:'접수가 마감되었습니다',emptyP:'논문 실적이 없으면 비워 두세요.',emptyT:'특허 실적이 없으면 비워 두세요.',emptyA:'수상 실적이 없으면 비워 두세요.',
   selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',badType:'PDF·JPG·PNG 파일만 올릴 수 있습니다.',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
   sending:'제출하는 중',uploading:'증빙 파일을 올리고 있습니다…',upN:'증빙 파일 {i} / {n} 올리는 중',saving:'접수 기록 중…',noClose:'창을 닫지 마세요.',
-  done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기',previewBanner:'미리보기 화면입니다 — 담당자가 접수를 열면 제출할 수 있습니다.',previewErr:'아직 접수가 열리지 않았습니다.'},
+  done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기',previewBanner:'미리보기 화면입니다 — 담당자가 접수를 열면 제출할 수 있습니다.',previewErr:'아직 접수가 열리지 않았습니다.',
+  gateT:'GIST 메일로 본인 확인',gateD:'제출과 조회는 본인만 할 수 있도록, 학교 메일로 받은 인증번호를 입력해 주세요.',gEmail:'GIST 메일 주소',gSend:'인증번호 받기',gCode:'메일로 받은 6자리 인증번호',gVerify:'확인',
+  gNote:'@gist.ac.kr 또는 @gm.gist.ac.kr 주소만 사용할 수 있습니다. 메일이 안 오면 스팸함을 확인해 주세요. 인증은 6시간 동안 유지됩니다.',gSent:'{email} 로 인증번호를 보냈습니다. (10분 안에 입력)',gResend:'다시 보내기',gBadEmail:'GIST 메일 주소를 입력해 주세요.',
+  verified:'인증됨',logout:'로그아웃',tabForm:'실적 제출',tabMine:'내 제출 내역',emailVer:'(본인 확인된 메일)',
+  mineEmpty:'아직 제출한 내역이 없습니다.',mineLoad:'불러오는 중…',mineLatest:'현재 반영되는 제출',mineOld:'이전 제출 (대체됨)',mineEdit:'이 내용으로 수정하기',mineHint:'수정하려면 내용을 불러와 고친 뒤 다시 제출하세요. 마지막 제출만 반영됩니다.',
+  keepFile:'이전에 낸 파일 사용 (바꾸려면 새 파일 선택)',view:'보기',none:'없음',loadedEdit:'이전 제출 내용을 불러왔습니다. 고친 뒤 다시 제출하세요.',sessionExp:'본인 확인이 만료되었습니다. 다시 인증해 주세요.'},
  en:{brand:'GIST · Dept. of Mechanical and Robotics Engineering',lead:'Enter your papers, patents and awards and upload the evidence. The office verifies them against the documents and JCR.',deadline:'Deadline',period:'Eligible period',acceptBasis:'(by acceptance date)',
   s1:'Basic information',s1d:'If you submit again with the same student ID, only your latest submission counts.',sid:'Student ID',sidPh:'e.g. 20244040',sidErr:'Enter your 8-digit student ID.',name:'Name',namePh:'Name as in your passport',nameErr:'Enter your name.',
   course:'Program',phd:'Ph.D.',integ:'Integrated M.S.–Ph.D.',courseErr:'Choose your program.',sem:'Semester',semOpt:'(current semester)',semPh:'e.g. 4',adv:'Advisor',advPh:"Advisor's name",advErr:'Enter your advisor.',email:'Email',optional:'(optional)',
@@ -344,7 +390,12 @@ const I18N = {
   contact:'Contact',closed:'Submissions are closed',emptyP:'Leave empty if you have no papers.',emptyT:'Leave empty if you have no patents.',emptyA:'Leave empty if you have no awards.',
   selProf:'Select',etcProf:'Not in the list (type it)',badType:'Only PDF, JPG or PNG files can be uploaded.',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
   sending:'Submitting',uploading:'Uploading evidence files…',upN:'Uploading file {i} of {n}',saving:'Saving your submission…',noClose:'Please do not close this window.',
-  done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back',previewBanner:'Preview — submissions open once the office connects the form.',previewErr:'Submissions are not open yet.'}
+  done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back',previewBanner:'Preview — submissions open once the office connects the form.',previewErr:'Submissions are not open yet.',
+  gateT:'Verify with your GIST email',gateD:'So that only you can submit and view your records, enter the code sent to your school email.',gEmail:'GIST email address',gSend:'Send code',gCode:'6-digit code from the email',gVerify:'Verify',
+  gNote:'Only @gist.ac.kr or @gm.gist.ac.kr addresses are accepted. Check your spam folder if the email does not arrive. Verification lasts 6 hours.',gSent:'A code was sent to {email} (valid for 10 minutes).',gResend:'Resend',gBadEmail:'Please enter your GIST email address.',
+  verified:'verified',logout:'Sign out',tabForm:'Submit',tabMine:'My submissions',emailVer:'(verified)',
+  mineEmpty:'You have no submissions yet.',mineLoad:'Loading…',mineLatest:'Current submission',mineOld:'Earlier submissions (replaced)',mineEdit:'Edit this submission',mineHint:'To make changes, load your submission, edit it and submit again. Only the latest one counts.',
+  keepFile:'Using your previously uploaded file (choose a new one to replace)',view:'View',none:'None',loadedEdit:'Your previous submission has been loaded. Edit and submit again.',sessionExp:'Your session has expired. Please verify again.'}
 };
 let LANG = CFG.lang || new URLSearchParams(location.search).get('lang') || ((navigator.language||'ko').toLowerCase().startsWith('ko') ? 'ko' : 'en');
 if (LANG !== 'en') LANG = 'ko';
@@ -356,6 +407,8 @@ function translate(root){
   root.querySelectorAll('[data-t]').forEach(e => e.textContent = T(e.dataset.t));
   root.querySelectorAll('[data-ph]').forEach(e => e.placeholder = T(e.dataset.ph));
   root.querySelectorAll('.file').forEach(b => { if (b.classList.contains('has')) { const f = b.querySelector('input').files[0]; if (f) b.querySelector('.t').textContent = f.name; } });
+  root.querySelectorAll('.file.keep').forEach(b => { b.querySelector('.t').textContent = T('keepFile'); });
+  if (typeof MINE !== 'undefined' && MINE && TAB === 'mine' && root === document) renderMine();
 }
 function setLang(l){
   LANG = l; document.documentElement.lang = l;
@@ -385,6 +438,7 @@ function init(){
     document.querySelector('.bar').style.display='none';
   } else addPaper();
   setLang(LANG);
+  authInit();
 }
 
 function mount(tplId, boxId){
@@ -398,6 +452,7 @@ function mount(tplId, boxId){
     if (f && f.size > CFG.maxMb*1024*1024){ alert(T('tooBig',{mb:CFG.maxMb})); inp.value=''; }
     else if (f && !/\.(pdf|jpe?g|png)$/i.test(f.name)){ alert(T('badType')); inp.value=''; }
     const ok = !!inp.files[0];
+    if (ok) { delete box.dataset.keep; box.classList.remove('keep'); }
     box.classList.toggle('has', ok); box.querySelector('.t').textContent = ok ? inp.files[0].name : T('choose'); box.querySelector('.ico').textContent = ok ? '✓' : 'PDF';
   });
   node.querySelector('.del').onclick = () => { node.remove(); refresh(); };
@@ -424,6 +479,7 @@ function refresh(){
 function val(item, name){ const el = item.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; }
 function radio(item){ const c = item.querySelector('.seg input:checked'); return c ? c.value : ''; }
 function fileOf(item, name){ const el = item.querySelector(`input[type=file][name="${name}"]`); return el && el.files[0]; }
+function keepOf(item, name){ const el = item.querySelector(`input[type=file][name="${name}"]`); return el ? (el.closest('.file').dataset.keep || '') : ''; }
 function bad(scope, key){ const f = scope.querySelector(`.f[data-k="${key}"]`); if (f) f.classList.add('bad'); return f; }
 
 function collect(){
@@ -434,24 +490,26 @@ function collect(){
   const c = document.querySelector('input[name="과정"]:checked'); P.과정 = c ? c.value : ''; if(!P.과정) errs.push(bad(document,'과정'));
   P.재학학기 = $('#재학학기').value.trim();
   P.지도교수 = $('#지도교수').value.trim(); if(!P.지도교수) errs.push(bad(document,'지도교수'));
-  P.이메일 = $('#이메일').value.trim(); P.메모 = $('#메모').value.trim();
+  P.메모 = $('#메모').value.trim();
   const files = [];
   P.papers = [...document.querySelectorAll('#papers .item')].map(it => {
     const x = {journal:val(it,'journal'), title:val(it,'title'), doi:val(it,'doi'), accept:val(it,'accept'), role:radio(it), authors:val(it,'authors')};
     if(!x.journal) errs.push(bad(it,'journal')); if(!x.accept) errs.push(bad(it,'accept')); if(!x.role) errs.push(bad(it,'role'));
     if(!(+x.authors>=1)) errs.push(bad(it,'authors'));
-    const f1 = fileOf(it,'file1'), f2 = fileOf(it,'file2'); if(!f1) errs.push(bad(it,'file1'));
-    if(f1) files.push([x,'file1',f1]); if(f2) files.push([x,'file2',f2]); return x;
+    const f1 = fileOf(it,'file1'), f2 = fileOf(it,'file2'), k1 = keepOf(it,'file1'), k2 = keepOf(it,'file2');
+    if(!f1 && !k1) errs.push(bad(it,'file1'));
+    if(f1) files.push([x,'file1',f1]); else if(k1) x.file1 = k1;
+    if(f2) files.push([x,'file2',f2]); else if(k2) x.file2 = k2; return x;
   });
   P.patents = [...document.querySelectorAll('#patents .item')].map(it => {
     const x = {type:radio(it), name:val(it,'name'), no:val(it,'no'), date:val(it,'date'), share:val(it,'share')};
     if(!x.type) errs.push(bad(it,'type')); if(!(+x.share>0 && +x.share<=100)) errs.push(bad(it,'share'));
-    const f = fileOf(it,'file'); if(!f) errs.push(bad(it,'file')); else files.push([x,'file',f]); return x;
+    const f = fileOf(it,'file'), k = keepOf(it,'file'); if(f) files.push([x,'file',f]); else if(k) x.file = k; else errs.push(bad(it,'file')); return x;
   });
   P.awards = [...document.querySelectorAll('#awards .item')].map(it => {
     const x = {type:radio(it), event:val(it,'event'), prize:val(it,'prize'), date:val(it,'date')};
     if(!x.type) errs.push(bad(it,'type'));
-    const f = fileOf(it,'file'); if(!f) errs.push(bad(it,'file')); else files.push([x,'file',f]); return x;
+    const f = fileOf(it,'file'), k = keepOf(it,'file'); if(f) files.push([x,'file',f]); else if(k) x.file = k; else errs.push(bad(it,'file')); return x;
   });
   return {P, files, errs: errs.filter(Boolean)};
 }
@@ -461,7 +519,7 @@ function gs(fn, ...a){
   if (CFG_TPL && window.google && google.script) return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); });
   if (!API) return Promise.reject(new Error(T('previewErr')));
   return fetch(API, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:fn, args:a})})
-    .then(r => r.json()).then(j => { if (j.ok) return j.data; throw new Error(j.error); });
+    .then(r => r.json()).then(j => { if (j.ok) return j.data; const m = String(j.error||''); if (m.startsWith('LOGIN:')) { onExpired(); throw new Error(T('sessionExp')); } throw new Error(m); });
 }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
@@ -477,30 +535,151 @@ async function send(){
     for (let i=0;i<files.length;i++){
       const [obj,key,f] = files[i];
       $('#pm').textContent = T('upN',{i:i+1,n:files.length}) + ' · ' + f.name;
-      obj[key] = await gs('uploadFile', {name:f.name}, await readUrl(f));
+      obj[key] = await gs('uploadFile', {name:f.name}, await readUrl(f), AUTH.token);
       $('#pb').style.width = Math.round((i+1)/(files.length+1)*100)+'%';
     }
     $('#pm').textContent = T('saving');
-    const r = await gs('submit', P);
+    const r = await gs('submit', P, AUTH.token);
+    MINE = null; $('#go').disabled = false; $('#agree').checked = false;
     $('#pb').style.width = '100%';
-    box.innerHTML = `<div class="big">✓</div><h3>${T('done')}</h3><p>${T('rcpt')} <b>${esc(r.id)}</b></p><p>${T('doneCnt',{p:r.papers,t:r.patents,a:r.awards})}</p><p style="margin-top:12px;font-size:13px;color:var(--mute)">${T('doneNote',{time:esc(r.time)})}</p>`;
+    box.innerHTML = `<div class="big">✓</div><h3>${T('done')}</h3><p>${T('rcpt')} <b>${esc(r.id)}</b></p><p>${T('doneCnt',{p:r.papers,t:r.patents,a:r.awards})}</p><p style="margin-top:12px;font-size:13px;color:var(--mute)">${T('doneNote',{time:esc(r.time)})}</p><p style="margin-top:16px"><button class="go" onclick="document.getElementById('modal').classList.remove('on');showTab('mine')">${T('tabMine')}</button></p>`;
   }catch(e){
     box.innerHTML = `<h3>${T('fail')}</h3><p>${esc((e && e.message) || e)}</p><p style="margin-top:14px"><button class="go" onclick="document.getElementById('modal').classList.remove('on')">${T('back')}</button></p>`;
     $('#go').disabled = false;
   }
 }
+
+/* ================= 학생 본인 확인 · 내 제출 내역 ================= */
+let AUTH = { token:'', email:'', exp:0 };
+let MINE = null, TAB = 'form';
+const ls_get = k => { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } };
+const ls_set = (k,v) => { try { v ? localStorage.setItem(k,v) : localStorage.removeItem(k); } catch(e) {} };
+function authInit(){
+  try { const a = JSON.parse(ls_get('mreAuth') || '{}'); if (a.token && a.exp > Date.now()) AUTH = a; } catch(e) {}
+  renderAuth();
+}
+function renderAuth(){
+  const ok = !!AUTH.token && !PREVIEW && !CFG.closed;
+  $('#gate').hidden = ok || PREVIEW || CFG.closed;
+  $('#sess').hidden = !ok; $('#tabs').hidden = !ok;
+  if (ok){ $('#sEmail').textContent = AUTH.email; $('#vEmail').value = AUTH.email; showTab(TAB); }
+  else { $('#formArea').hidden = !(PREVIEW && !CFG.closed); $('#mineArea').hidden = true; }
+  updateBar();
+}
+function updateBar(){
+  const show = location.hash !== '#admin' && !CFG.closed && !$('#formArea').hidden;
+  document.querySelector('.bar').style.display = show ? '' : 'none';
+}
+function showTab(t){
+  TAB = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#formArea').hidden = t !== 'form'; $('#mineArea').hidden = t !== 'mine';
+  updateBar();
+  if (t === 'mine') loadMine();
+  else if (!MINE) loadMine(true);
+}
+let resendT = 0;
+async function sendCode(){
+  const email = $('#gEmail').value.trim().toLowerCase();
+  $('#gErr1').textContent=''; $('#gEmailBox').classList.remove('bad');
+  if (!/^[^@\s]+@(gm\.)?gist\.ac\.kr$/.test(email)){ $('#gErr1').textContent = T('gBadEmail'); $('#gEmailBox').classList.add('bad'); return; }
+  const b = $('#gSend'); b.disabled = true;
+  try{
+    await gs('requestCode', email, LANG);
+    $('#gCodeBox').hidden = false; $('#gHint').textContent = T('gSent',{email}); $('#gCode').focus();
+    let s = 60; clearInterval(resendT);
+    resendT = setInterval(()=>{ s--; b.textContent = s>0 ? `${T('gResend')} (${s})` : T('gResend'); if (s<=0){ clearInterval(resendT); b.disabled=false; } }, 1000);
+  }catch(e){ $('#gErr1').textContent = (e && e.message) || e; $('#gEmailBox').classList.add('bad'); b.disabled = false; }
+}
+async function checkCode(){
+  const email = $('#gEmail').value.trim().toLowerCase(), code = $('#gCode').value.replace(/\D/g,'');
+  $('#gErr2').textContent=''; $('#gCodeBox').classList.remove('bad');
+  if (code.length !== 6){ $('#gCodeBox').classList.add('bad'); return; }
+  const b = $('#gVerify'); b.disabled = true;
+  try{
+    const r = await gs('verifyCode', email, code);
+    AUTH = { token:r.token, email:r.email, exp: Date.now() + (r.hours||6)*3600e3 - 60e3 };
+    ls_set('mreAuth', JSON.stringify(AUTH)); MINE = null; TAB = 'form';
+    renderAuth();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }catch(e){ $('#gErr2').textContent = (e && e.message) || e; $('#gCodeBox').classList.add('bad'); }
+  b.disabled = false;
+}
+function logout(){ AUTH = {token:'',email:'',exp:0}; MINE = null; ls_set('mreAuth',''); $('#gCode').value=''; $('#gCodeBox').hidden = true; renderAuth(); }
+function onExpired(){ if (AUTH.token){ logout(); alert(T('sessionExp')); } }
+document.addEventListener('keydown', e => { if (e.key==='Enter' && e.target.id==='gEmail') sendCode(); if (e.key==='Enter' && e.target.id==='gCode') checkCode(); });
+
+async function loadMine(silent){
+  if (!AUTH.token) return;
+  const box = $('#mineArea');
+  if (!silent) box.innerHTML = `<section class="card empty-a">${T('mineLoad')}</section>`;
+  try{ MINE = await gs('myData', AUTH.token); }catch(e){ if (!silent) box.innerHTML = `<section class="card empty-a">${esc((e&&e.message)||e)}</section>`; return; }
+  // 이미 낸 학번은 고정
+  const cur = MINE.submissions.find(s => s['상태']==='유효') || MINE.submissions[0];
+  if (cur){ const sid = $('#학번'); if (!sid.value) sid.value = cur['학번']; sid.readOnly = true; }
+  if (!silent || TAB==='mine') renderMine();
+}
+function renderMine(){
+  const box = $('#mineArea'); const subs = (MINE && MINE.submissions) || [];
+  if (!subs.length){ box.innerHTML = `<section class="card empty-a">${T('mineEmpty')}</section>`; return; }
+  const ev = (u,label,s) => u ? `<button class="btn sm evbtn" type="button" data-s="mine" data-u="${esc(u)}" data-l="${esc(s['학번']+' '+label)}">📄 ${T('view')}</button>` : `<span class="sub2">${T('none')}</span>`;
+  const card = (s, latest) => `<section class="card">
+    <div class="mine-head"><div><div style="font-weight:800;font-size:17px">${esc(s['성명'])} <span class="sub2">${esc(s['학번'])}</span></div>
+      <div class="sub2">${T('rcpt')} ${esc(s['접수번호'])} · ${esc(s['접수시각'])}</div></div>
+      <div>${latest ? '<span class="pill ok">'+T('mineLatest')+'</span>' : '<span class="pill old">'+T('mineOld')+'</span>'}</div></div>
+    <div class="sub2" style="margin-bottom:10px">${esc(s['과정'])} · ${esc(s['지도교수'])}</div>
+    <h4 style="margin:12px 0 6px">${T('s2')} ${s.papers.length}</h4>
+    ${s.papers.length ? `<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>${T('journal')}</th><th>${T('accept')}</th><th>${T('role')}</th><th>${T('authors')}</th><th></th></tr>${s.papers.map(p=>`<tr><td>${esc(p['순번'])}</td><td><b>${esc(p['저널명(학생)'])}</b><div class="sub2">${esc(p['논문제목'])}</div></td><td>${esc(p['Accept일'])}</td><td>${esc(p['역할(학생)'])}</td><td>${esc(p['저자수(학생)'])}</td><td>${ev(p['증빙1'],'논문'+p['순번'],s)} ${p['증빙2']?ev(p['증빙2'],'논문'+p['순번']+'_추가',s):''}</td></tr>`).join('')}</table></div>` : `<div class="sub2">${T('none')}</div>`}
+    <h4 style="margin:12px 0 6px">${T('s3')} ${s.patents.length}</h4>
+    ${s.patents.length ? `<div class="a-wrap"><table class="a-tbl">${s.patents.map(p=>`<tr><td>${esc(p['순번'])}</td><td>${esc(p['구분'])}</td><td>${esc(p['명칭'])}<div class="sub2">${esc(p['출원·등록번호'])} ${esc(p['일자'])}</div></td><td>${esc(p['기여도(%)'])}%</td><td>${ev(p['증빙'],'특허'+p['순번'],s)}</td></tr>`).join('')}</table></div>` : `<div class="sub2">${T('none')}</div>`}
+    <h4 style="margin:12px 0 6px">${T('s4')} ${s.awards.length}</h4>
+    ${s.awards.length ? `<div class="a-wrap"><table class="a-tbl">${s.awards.map(p=>`<tr><td>${esc(p['순번'])}</td><td>${esc(p['구분'])}</td><td>${esc(p['학회·대회명'])}<div class="sub2">${esc(p['수상명'])} ${esc(p['일자'])}</div></td><td>${ev(p['증빙'],'수상'+p['순번'],s)}</td></tr>`).join('')}</table></div>` : `<div class="sub2">${T('none')}</div>`}
+    ${latest ? `<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn red" type="button" onclick="editMine()">${T('mineEdit')}</button><span class="sub2">${T('mineHint')}</span></div>` : ''}
+  </section>`;
+  const latest = subs.find(s => s['상태']==='유효'), olds = subs.filter(s => s !== latest);
+  box.innerHTML = (latest ? card(latest, true) : '') + (olds.length ? `<details class="card" style="padding:16px 20px"><summary style="cursor:pointer;font-weight:700">${T('mineOld')} ${olds.length}</summary>${olds.map(s=>card(s,false)).join('')}</details>` : '');
+}
+const fid = u => (String(u||'').match(/[-\w]{25,}/) || [''])[0];
+function setKeep(item, name, url){
+  const el = item.querySelector(`input[type=file][name="${name}"]`); if (!el || !url) return;
+  const box = el.closest('.file'); box.dataset.keep = fid(url); box.classList.add('keep');
+  box.querySelector('.t').textContent = T('keepFile'); box.querySelector('.ico').textContent = '↺';
+}
+function setRadio(item, v){ const r = [...item.querySelectorAll('.seg input')].find(x => x.value === v); if (r) r.checked = true; }
+function editMine(){
+  const s = MINE && MINE.submissions.find(x => x['상태']==='유효'); if (!s) return;
+  $('#학번').value = s['학번']; $('#성명').value = s['성명']; $('#재학학기').value = s['재학학기'] || '';
+  const c = [...document.querySelectorAll('input[name="과정"]')].find(x => x.value === s['과정']); if (c) c.checked = true;
+  const sel = $('#지도교수Sel'); const has = [...sel.options].some(o => o.value === s['지도교수']);
+  if (has){ sel.value = s['지도교수']; $('#지도교수').style.display='none'; } else { sel.value = '__etc'; $('#지도교수').style.display='block'; }
+  $('#지도교수').value = s['지도교수']; $('#메모').value = s['학생메모'] || '';
+  ['papers','patents','awards'].forEach(b => document.getElementById(b).innerHTML = '');
+  s.papers.forEach(p => { addPaper(); const it = [...document.querySelectorAll('#papers .item')].pop();
+    it.querySelector('[name=journal]').value = p['저널명(학생)']; it.querySelector('[name=title]').value = p['논문제목'];
+    it.querySelector('[name=doi]').value = p['DOI']; it.querySelector('[name=accept]').value = p['Accept일'];
+    it.querySelector('[name=authors]').value = p['저자수(학생)']; setRadio(it, p['역할(학생)']); setKeep(it,'file1',p['증빙1']); setKeep(it,'file2',p['증빙2']); });
+  s.patents.forEach(p => { addPatent(); const it = [...document.querySelectorAll('#patents .item')].pop();
+    setRadio(it, p['구분']); it.querySelector('[name=name]').value = p['명칭']; it.querySelector('[name=no]').value = p['출원·등록번호'];
+    it.querySelector('[name=date]').value = p['일자']; it.querySelector('[name=share]').value = p['기여도(%)']; setKeep(it,'file',p['증빙']); });
+  s.awards.forEach(p => { addAward(); const it = [...document.querySelectorAll('#awards .item')].pop();
+    setRadio(it, p['구분']); it.querySelector('[name=event]').value = p['학회·대회명']; it.querySelector('[name=prize]').value = p['수상명'];
+    it.querySelector('[name=date]').value = p['일자']; setKeep(it,'file',p['증빙']); });
+  refresh(); showTab('form');
+  const n = $('#notice'); n.style.display=''; n.textContent = T('loadedEdit');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
 /* ================= 담당자(관리자) 화면 ================= */
 let ADM = { key:'', data:null };
 const ss_get = k => { try { return sessionStorage.getItem(k) || ''; } catch(e) { return ''; } };
 const ss_set = (k,v) => { try { v ? sessionStorage.setItem(k,v) : sessionStorage.removeItem(k); } catch(e) {} };
 function route(){
   const isA = location.hash === '#admin';
-  $('#app').hidden = isA; document.querySelector('.bar').style.display = isA ? 'none' : '';
+  $('#app').hidden = isA; updateBar();
   $('#admin').hidden = !isA; document.querySelector('.chips').style.display = isA ? 'none' : '';
   $('#title').textContent = isA ? '장학금 연구실적 — 담당자 화면' : ((LANG==='en' && CFG.titleEn) || CFG.title);
   document.querySelector('.lang').style.display = isA ? 'none' : '';
   document.querySelector('[data-t=lead]').textContent = isA ? '학생 제출 목록을 보고 증빙 PDF를 바로 열어 봅니다.' : T('lead');
-  document.querySelector('[data-t=brand]').textContent = isA ? 'GIST · 기계로봇공학과' : T('brand');
   if (isA){ ADM.key = ADM.key || ss_get('admKey'); if (ADM.key && !ADM.data) loadAdmin(); else showAdmin(!!ADM.data); }
 }
 function showAdmin(inside){ $('#aLogin').hidden = inside; $('#aMain').hidden = !inside; }
@@ -539,7 +718,7 @@ function renderAdmin(){
     const aws = s.awards.map(p => `<tr><td>${esc(p['순번'])}</td><td>${esc(p['구분'])}</td><td>${esc(p['학회·대회명'])}<div class="sub">${esc(p['수상명'])} ${esc(p['일자'])}</div></td><td>${ev(p['증빙'],'증빙')}</td></tr>`).join('');
     return `<div class="a-row" id="ar${i}">
       <div class="a-head" onclick="this.parentElement.classList.toggle('open')">
-        <div><div class="nm">${esc(s['성명'])}</div><div class="sub">${esc(s['학번'])}</div></div>
+        <div><div class="nm">${esc(s['성명'])}</div><div class="sub">${esc(s['학번'])}</div><div class="sub" style="font-size:11.5px">${esc(s['이메일']||'')}</div></div>
         <div>${pil}${rep}<span class="pill">${esc(s['과정'])}</span><span class="sub">${esc(s['재학학기'] ? s['재학학기']+'학기' : '')}</span></div>
         <div><span class="sub">지도교수</span><div>${esc(s['지도교수'])}</div></div>
         <div class="hide-m"><span class="pill">논문 ${s.papers.length}</span><span class="pill">특허 ${s.patents.length}</span><span class="pill">수상 ${s.awards.length}</span></div>
@@ -559,10 +738,10 @@ function renderAdmin(){
   }).join('');
 }
 let VURL = '';
-async function viewFile(url, label){
+async function viewFile(url, label, src){
   const v = $('#viewer'); v.classList.add('on'); $('#vName').textContent = label + ' — 불러오는 중…'; $('#vBody').innerHTML = '';
   try{
-    const f = await gs('adminFile', ADM.key, url);
+    const f = src === 'mine' ? await gs('myFile', AUTH.token, url) : await gs('adminFile', ADM.key, url);
     const bin = atob(f.data), arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
     // 파일 내용으로 종류를 다시 확인 — PDF·PNG·JPG만 화면에 띄움
     const kind = (arr[0]===0x25&&arr[1]===0x50&&arr[2]===0x44&&arr[3]===0x46) ? 'application/pdf'
@@ -610,7 +789,7 @@ function adminCsv(){
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = `장학금_제출목록_${(D.now||'').slice(0,10)}.csv`; a.click();
 }
 window.addEventListener('hashchange', route);
-document.addEventListener('click', e => { const b = e.target.closest('.evbtn'); if (b) viewFile(b.dataset.u, b.dataset.l); });
+document.addEventListener('click', e => { const b = e.target.closest('.evbtn'); if (b) viewFile(b.dataset.u, b.dataset.l, b.dataset.s); });
 
 (async () => {
   if (!CFG_TPL && API){ try { const r = await fetch(API + '?action=config'); CFG = Object.assign({}, CFG, await r.json()); } catch(e) {} }
