@@ -564,10 +564,28 @@ async function viewFile(url, label){
     if (VURL) URL.revokeObjectURL(VURL);
     VURL = URL.createObjectURL(new Blob([arr], {type: f.mime}));
     $('#vName').textContent = f.name; $('#vOpen').href = VURL; $('#vDown').href = VURL; $('#vDown').download = f.name;
-    $('#vBody').innerHTML = f.mime.startsWith('image/') ? `<img src="${VURL}" alt="">` : `<iframe src="${VURL}" title="증빙"></iframe>`;
+    if (f.mime.startsWith('image/')) { $('#vBody').innerHTML = `<img src="${VURL}" alt="">`; return; }
+    try { await renderPdf(arr); } catch(err) { $('#vBody').innerHTML = `<iframe src="${VURL}" title="증빙"></iframe>`; }
   }catch(e){ $('#vName').textContent = label; $('#vBody').innerHTML = `<p style="padding:30px">${esc((e && e.message) || e)}</p>`; }
 }
-function closeViewer(){ $('#viewer').classList.remove('on'); $('#vBody').innerHTML=''; }
+function loadPdfJs(){
+  if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+  return new Promise((ok,no)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload=()=>{ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; ok(pdfjsLib); }; s.onerror=no; document.head.appendChild(s); });
+}
+async function renderPdf(bytes){
+  const lib = await loadPdfJs();
+  const doc = await lib.getDocument({data: bytes}).promise;
+  const body = $('#vBody'); body.innerHTML = ''; body.style.display = 'block'; body.style.background = '#E9EBEA'; body.style.padding = '14px';
+  const w = Math.min(body.clientWidth - 28, 1000);
+  for (let i = 1; i <= doc.numPages; i++){
+    const page = await doc.getPage(i), vp0 = page.getViewport({scale:1}), sc = w / vp0.width, dpr = window.devicePixelRatio || 1;
+    const vp = page.getViewport({scale: sc * dpr}), c = document.createElement('canvas');
+    c.width = vp.width; c.height = vp.height; c.style.width = (vp.width/dpr) + 'px'; c.style.display = 'block'; c.style.margin = '0 auto 12px'; c.style.background = '#fff'; c.style.boxShadow = '0 2px 10px rgba(0,0,0,.12)';
+    body.appendChild(c); await page.render({canvasContext: c.getContext('2d'), viewport: vp}).promise;
+  }
+}
+function closeViewer(){ const b=$('#vBody'); b.style.display=''; b.style.background=''; b.style.padding=''; $('#viewer').classList.remove('on'); $('#vBody').innerHTML=''; }
 document.addEventListener('keydown', e => { if (e.key==='Escape') closeViewer(); });
 function adminCsv(){
   const D = ADM.data; if (!D) return;
