@@ -103,12 +103,23 @@ function showUrl() {
 }
 
 /* ---------------- 공통 ---------------- */
-function ss_() { return SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID')); }
+let SS_ = null;   // 한 번 실행하는 동안 시트를 한 번만 엶 (속도)
+function ss_() { return SS_ || (SS_ = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SHEET_ID'))); }
 
 function settings_() {
+  const c = CacheService.getScriptCache(), hit = c.get('settings_v1');   // 설정은 30초 동안 기억 (시트를 매번 열지 않음)
+  if (hit) { const o = JSON.parse(hit); if (o.__d) Object.keys(o.__d).forEach(k => o[k] = new Date(o.__d[k])); delete o.__d; return o; }
   const rows = ss_().getSheetByName('설정').getDataRange().getValues().slice(1);
-  const o = {}; rows.forEach(r => { if (r[0]) o[String(r[0]).trim()] = r[1]; });
+  const o = {}, d = {}; rows.forEach(r => { if (r[0]) { const k = String(r[0]).trim(); o[k] = r[1]; if (r[1] instanceof Date) d[k] = r[1].getTime(); } });
+  try { c.put('settings_v1', JSON.stringify(Object.assign({}, o, { __d: d })), 30); } catch (e) {}
   return o;
+}
+/* 임시 업로드 폴더 — ID를 기억해 두고 바로 엶 (속도) */
+function tmpFolder_() {
+  const P = PropertiesService.getScriptProperties(), id = P.getProperty('TMP_ID');
+  if (id) try { return DriveApp.getFolderById(id); } catch (e) {}
+  const f = getOrCreate_(DriveApp.getFolderById(P.getProperty('FOLDER_ID')), '_임시업로드');
+  P.setProperty('TMP_ID', f.getId()); return f;
 }
 
 function parseDate_(v) {
@@ -328,8 +339,7 @@ function uploadFile(meta, dataUrl, token) {
   if (bytes.length > Number(s['파일최대MB'] || 15) * 1024 * 1024) throw new Error('파일이 너무 큽니다. / The file is too large.');
   const kind = sniff_(bytes);   // 파일 내용으로 종류 판별 (확장자·브라우저 정보는 믿지 않음)
   if (!kind) throw new Error('증빙은 PDF·JPG·PNG 파일만 올릴 수 있습니다. / Only PDF, JPG or PNG files are accepted.');
-  const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
-  const tmp = getOrCreate_(root, '_임시업로드');
+  const tmp = tmpFolder_();
   const base = String(meta && meta.name || 'file').replace(/\.[^.]*$/, '').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
   const f = tmp.createFile(Utilities.newBlob(bytes, kind.mime, base + kind.ext));
   return f.getId();
@@ -389,8 +399,7 @@ function submit(p, token) {
     const own = ownFileIds_(email);
 
     // 먼저 증빙 파일이 모두 이번에 임시로 올린 파일인지 확인 (확인 전에는 아무것도 기록하지 않음)
-    const root0 = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
-    const tmpId0 = getOrCreate_(root0, '_임시업로드').getId();
+    const tmpId0 = tmpFolder_().getId();
     const fids = [];
     (p.papers || []).forEach(x => { if (x.file1) fids.push(x.file1); if (x.file2) fids.push(x.file2); });
     (p.patents || []).forEach(x => { if (x.file) fids.push(x.file); });
@@ -412,7 +421,7 @@ function submit(p, token) {
     // 증빙 파일 → 학번_성명 폴더로 이동·이름 정리
     const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
     const folder = getOrCreate_(root, p.학번 + '_' + String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40));
-    const tmpId = getOrCreate_(root, '_임시업로드').getId();
+    const tmpId = tmpId0;
     const place = (fid, label) => {
       if (!fid) return '';
       if (own[String(fid)]) return own[String(fid)];   // 기존 본인 파일은 그대로
@@ -442,7 +451,7 @@ function submit(p, token) {
     awards.forEach((x, i) => ss.getSheetByName('수상').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
       t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))]));
 
-    try { cleanTemp_(); } catch (e) {}
+    try { const cc = CacheService.getScriptCache(); if (!cc.get('cleaned')) { cc.put('cleaned', '1', 3600); cleanTemp_(); } } catch (e) {}   // 1시간에 한 번만
     return { id: id, papers: papers.length, patents: patents.length, awards: awards.length, time: now };
   } finally { lock.releaseLock(); }
 }
@@ -758,7 +767,7 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
     <div class="grid">
       <div class="f full" data-k="journal"><label><span data-t="journal"></span><span class="req">*</span></label><input name="journal" data-ph="journalPh"><div class="hint" data-t="journalHint"></div><div class="err" data-t="journalErr"></div></div>
       <div class="f full"><label data-t="ptitle"></label><input name="title" data-ph="ptitlePh"></div>
-      <div class="f"><label>DOI<span class="opt" data-t="ifAny"></span></label><input name="doi" placeholder="10.xxxx/xxxxx"></div>
+      <div class="f" data-k="doi"><label>DOI<span class="opt" data-t="ifAny"></span></label><input name="doi" placeholder="10.xxxx/xxxxx"><div class="err" data-t="doiErr"></div></div>
       <div class="f" data-k="accept"><label><span data-t="accept"></span><span class="req">*</span> <span class="opt" data-t="acceptOpt"></span></label><input name="accept" type="date"><div class="err" data-t="acceptErr"></div></div>
       <div class="f full" data-k="role"><label><span data-t="role"></span><span class="req">*</span></label>
         <div class="seg">
@@ -835,7 +844,7 @@ const I18N = {
   s5:'확인',memo:'담당자에게 남길 말',memoPh:'예) 논문 2는 아직 게재 전이라 Accept 메일을 함께 올렸습니다.',agree:'입력한 실적과 증빙이 사실이며, 증빙(논문 PDF 등)이 장학금 심사에 쓰이는 것에 동의합니다.',
   cntP:'논문',cntT:'특허',cntA:'수상',submit:'제출하기',paper:'논문',patent:'특허',award:'수상',del:'삭제',
   journal:'저널명 (전체 이름)',journalPh:'예) Advanced Functional Materials',journalHint:'약어 대신 전체 이름으로 적어 주세요.',journalErr:'저널명을 입력해 주세요.',ptitle:'논문 제목',ptitlePh:'논문 제목',ifAny:'(있으면)',
-  accept:'Accept 날짜',acceptOpt:'(일자가 불명확한 경우 1일로)',acceptErr:'Accept 날짜를 입력해 주세요.',role:'나의 역할',rFA:'제1저자',rCoFA:'공동 제1저자',rCA:'교신저자',rETC:'그 외 공저자',roleErr:'역할을 골라 주세요.',
+  accept:'Accept 날짜',acceptOpt:'(일자가 불명확한 경우 1일로)',acceptErr:'Accept 날짜를 입력해 주세요.',acceptFuture:'오늘 이후 날짜는 넣을 수 없습니다.',doiErr:'DOI 형식이 아닙니다. 예) 10.1016/j.ijmecsci.2026.110123',authorsMin2:'공동 제1저자·그 외 공저자는 저자가 2명 이상이어야 합니다.',dupPaper:'같은 논문을 두 번 넣었습니다.',journalAbbr:'약어 말고 저널 전체 이름으로 써 주세요. 예) Int. J. Mech. Sci. → International Journal of Mechanical Sciences',chkTitle:'제출 전에 한 번 더 확인해 주세요',chkOut:'논문 {i}: Accept 날짜({d})가 실적인정 기간({r}) 밖입니다.',chkGo:'이대로 제출',chkFix:'고치러 가기',upPar:'증빙 올리는 중 ({i}/{n})',shrink:'사진 크기 줄이는 중…',role:'나의 역할',rFA:'제1저자',rCoFA:'공동 제1저자',rCA:'교신저자',rETC:'그 외 공저자',roleErr:'역할을 골라 주세요.',
   authors:'총 저자 수 (본인 포함)',authorsPh:'예) 5',authorsErr:'저자 수를 입력해 주세요.',file1:'증빙 ① 논문 첫 페이지 또는 PDF',file1Ph:'저자·소속이 보이는 첫 페이지를 올려 주세요',fileErr:'증빙 파일을 올려 주세요.',
   file2:'증빙 ② Accept 메일 등',file2Opt:'(게재 전이면)',choose:'파일 선택',
   ptype:'구분',kApp:'국내 출원',kReg:'국내 등록',iApp:'국제 출원',iReg:'국제 등록',typeErr:'구분을 골라 주세요.',pname:'발명의 명칭',pno:'출원·등록번호',pdate:'출원·등록일',share:'나의 기여도(%)',sharePh:'예) 30',shareErr:'1~100 사이로 입력해 주세요.',pfile:'증빙 (출원서·등록증, 기여도 표시)',
@@ -858,7 +867,7 @@ const I18N = {
   s5:'Confirmation',memo:'Note to the office',memoPh:'e.g. Paper 2 is not yet published, so I attached the acceptance email.',agree:'I confirm that the information and evidence are true, and agree that the evidence (paper PDFs etc.) will be used for the scholarship review.',
   cntP:'Papers',cntT:'Patents',cntA:'Awards',submit:'Submit',paper:'Paper',patent:'Patent',award:'Award',del:'Remove',
   journal:'Journal (full title)',journalPh:'e.g. Advanced Functional Materials',journalHint:'Use the full journal title, not the abbreviation.',journalErr:'Enter the journal title.',ptitle:'Paper title',ptitlePh:'Paper title',ifAny:'(if any)',
-  accept:'Acceptance date',acceptOpt:'(if the day is unknown, use the 1st)',acceptErr:'Enter the acceptance date.',role:'Your role',rFA:'First author',rCoFA:'Co-first author',rCA:'Corresponding',rETC:'Other co-author',roleErr:'Choose your role.',
+  accept:'Acceptance date',acceptOpt:'(if the day is unknown, use the 1st)',acceptErr:'Enter the acceptance date.',acceptFuture:'The date cannot be in the future.',doiErr:'This is not a DOI. e.g. 10.1016/j.ijmecsci.2026.110123',authorsMin2:'A co-first author or other co-author means at least 2 authors.',dupPaper:'The same paper is entered twice.',journalAbbr:'Please write the full journal title, not the abbreviation. e.g. Int. J. Mech. Sci. → International Journal of Mechanical Sciences',chkTitle:'Please check before submitting',chkOut:'Paper {i}: the acceptance date ({d}) is outside the eligible period ({r}).',chkGo:'Submit anyway',chkFix:'Go back and fix',upPar:'Uploading evidence ({i}/{n})',shrink:'Reducing photo size…',role:'Your role',rFA:'First author',rCoFA:'Co-first author',rCA:'Corresponding',rETC:'Other co-author',roleErr:'Choose your role.',
   authors:'Total number of authors (incl. you)',authorsPh:'e.g. 5',authorsErr:'Enter the number of authors.',file1:'Evidence ① First page of the paper or full PDF',file1Ph:'Upload the first page showing authors and affiliations',fileErr:'Upload the evidence file.',
   file2:'Evidence ② Acceptance email etc.',file2Opt:'(if not yet published)',choose:'Choose file',
   ptype:'Type',kApp:'Korean application',kReg:'Korean registration',iApp:'International application',iReg:'International registration',typeErr:'Choose the type.',pname:'Title of invention',pno:'Application / registration no.',pdate:'Filing / registration date',share:'Your share (%)',sharePh:'e.g. 30',shareErr:'Enter a number from 1 to 100.',pfile:'Evidence (application / certificate showing shares)',
@@ -961,7 +970,11 @@ function val(item, name){ const el = item.querySelector(\`[name="\${name}"]\`); 
 function radio(item){ const c = item.querySelector('.seg input:checked'); return c ? c.value : ''; }
 function fileOf(item, name){ const el = item.querySelector(\`input[type=file][name="\${name}"]\`); return el && el.files[0]; }
 function keepOf(item, name){ const el = item.querySelector(\`input[type=file][name="\${name}"]\`); return el ? (el.closest('.file').dataset.keep || '') : ''; }
-function bad(scope, key){ const f = scope.querySelector(\`.f[data-k="\${key}"]\`); if (f) f.classList.add('bad'); return f; }
+function bad(scope, key, msg){ const f = scope.querySelector(\`.f[data-k="\${key}"]\`); if (!f) return f; f.classList.add('bad');
+  const e = f.querySelector('.err'); if (e){ if (!e.dataset.t0) e.dataset.t0 = e.dataset.t; e.dataset.t = msg || e.dataset.t0; e.textContent = T(e.dataset.t); } return f; }
+const normDoi = d => String(d||'').trim().replace(/^https?:\\/\\/(dx\\.)?doi\\.org\\//i,'').replace(/^doi:\\s*/i,'');
+const isAbbr = j => /\\b[A-Z][a-z]{0,5}\\.(\\s|$)/.test(j) && (j.match(/\\./g)||[]).length >= 2;
+const parseK = t => { const m = String(t||'').match(/(\\d{4})\\D+(\\d{1,2})\\D+(\\d{1,2})/); return m ? \`\${m[1]}-\${m[2].padStart(2,'0')}-\${m[3].padStart(2,'0')}\` : ''; };
 
 function collect(){
   document.querySelectorAll('.bad').forEach(b=>b.classList.remove('bad'));
@@ -973,11 +986,17 @@ function collect(){
   P.재학학기 = $('#재학학기').value.trim();
   P.지도교수 = $('#지도교수').value.trim(); if(!P.지도교수) errs.push(bad(document,'지도교수'));
   P.메모 = $('#메모').value.trim();
-  const files = [];
+  const files = [], seenP = {};
   P.papers = [...document.querySelectorAll('#papers .item')].map(it => {
-    const x = {journal:val(it,'journal'), title:val(it,'title'), doi:val(it,'doi'), accept:val(it,'accept'), role:radio(it), authors:val(it,'authors')};
-    if(!x.journal) errs.push(bad(it,'journal')); if(!x.accept) errs.push(bad(it,'accept')); if(!x.role) errs.push(bad(it,'role'));
-    if(!(+x.authors>=1)) errs.push(bad(it,'authors'));
+    const x = {journal:val(it,'journal'), title:val(it,'title'), doi:normDoi(val(it,'doi')), accept:val(it,'accept'), role:radio(it), authors:val(it,'authors')};
+    if(!x.journal) errs.push(bad(it,'journal')); else if(isAbbr(x.journal)) errs.push(bad(it,'journal','journalAbbr'));
+    if(!x.accept) errs.push(bad(it,'accept')); else if(x.accept > TODAY) errs.push(bad(it,'accept','acceptFuture'));
+    if(!x.role) errs.push(bad(it,'role'));
+    if(x.doi && !/^10\\.\\d{4,9}\\/\\S+$/.test(x.doi)) errs.push(bad(it,'doi'));
+    if(!(+x.authors>=1 && Number.isInteger(+x.authors))) errs.push(bad(it,'authors'));
+    else if((x.role==='co-FA'||x.role==='ETC') && +x.authors<2) errs.push(bad(it,'authors','authorsMin2'));
+    const key = (x.doi || x.title).toLowerCase().replace(/[^a-z0-9가-힣]/g,'');
+    if(key && seenP[key]) errs.push(bad(it,'journal','dupPaper')); seenP[key] = 1;
     const f1 = fileOf(it,'file1'), f2 = fileOf(it,'file2'), k1 = keepOf(it,'file1'), k2 = keepOf(it,'file2');
     if(!f1 && !k1) errs.push(bad(it,'file1'));
     if(f1) files.push([x,'file1',f1]); else if(k1) x.file1 = k1;
@@ -996,6 +1015,32 @@ function collect(){
   return {P, files, errs: errs.filter(Boolean)};
 }
 
+const TODAY = new Date(Date.now() + 9*3600e3).toISOString().slice(0,10);
+/* 휴대폰 사진(JPG·PNG)이 크면 글자가 충분히 보이는 크기(긴 변 2200px)로 줄여 올림 — PDF는 그대로 */
+async function shrink(f){
+  if (!/^image\\/(jpeg|png)$/.test(f.type) || f.size < 1.5*1024*1024) return f;
+  try {
+    const bmp = await createImageBitmap(f); const k = Math.min(1, 2200 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.88));
+    return b && b.size < f.size ? new File([b], f.name.replace(/\\.\\w+$/,'') + '.jpg', {type:'image/jpeg'}) : f;
+  } catch(e){ return f; }
+}
+/* 실적인정 기간 밖 Accept 날짜 등 — 막지는 않고 한 번 더 확인 */
+function softChecks(P){
+  const a = parseK(CFG.from), b = parseK(CFG.to), w = [];
+  if (a && b) P.papers.forEach((x,i) => { if (x.accept && (x.accept < a || x.accept > b)) w.push(T('chkOut',{i:i+1,d:x.accept,r:CFG.from+' ~ '+CFG.to})); });
+  return w;
+}
+function askWarn(w){
+  return new Promise(ok => {
+    const box = $('#box'); $('#modal').classList.add('on');
+    box.innerHTML = \`<h3>\${T('chkTitle')}</h3>\${w.map(x=>\`<p style="text-align:left">• \${esc(x)}</p>\`).join('')}<p style="margin-top:16px;display:flex;gap:8px;justify-content:center"><button class="btn" id="wFix">\${T('chkFix')}</button><button class="go" id="wGo">\${T('chkGo')}</button></p>\`;
+    $('#wFix').onclick = () => { $('#modal').classList.remove('on'); ok(false); };
+    $('#wGo').onclick = () => ok(true);
+  });
+}
 function readUrl(f){ return new Promise((ok,no)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=no; r.readAsDataURL(f); }); }
 function gs(fn, ...a){
   if (CFG_TPL && window.google && google.script) return new Promise((ok,no)=>{ const run = google.script.run.withSuccessHandler(ok).withFailureHandler(no); run[fn](...a); });
@@ -1010,16 +1055,20 @@ async function send(){
   if (errs.length){ errs[0].scrollIntoView({behavior:'smooth', block:'center'}); return; }
   if (!P.papers.length && !P.patents.length && !P.awards.length){ alert(T('needOne')); return; }
   if (!$('#agree').checked){ $('#agreeBox').scrollIntoView({behavior:'smooth',block:'center'}); $('#agreeBox').style.color='var(--red)'; return; }
+  const warn = softChecks(P);
+  if (warn.length && !(await askWarn(warn))) return;
   $('#go').disabled = true;
   const box = $('#box'); $('#modal').classList.add('on');
   box.innerHTML = \`<h3>\${T('sending')}</h3><p id="pm">\${T('uploading')}</p><div class="prog"><i id="pb"></i></div><p style="font-size:12px">\${T('noClose')}</p>\`;
   try{
-    for (let i=0;i<files.length;i++){
-      const [obj,key,f] = files[i];
-      $('#pm').textContent = T('upN',{i:i+1,n:files.length}) + ' · ' + f.name;
-      obj[key] = await gs('uploadFile', {name:f.name}, await readUrl(f), AUTH.token);
-      $('#pb').style.width = Math.round((i+1)/(files.length+1)*100)+'%';
-    }
+    // 증빙을 3개씩 동시에 올림 (한 개씩보다 약 2배 빠름)
+    let done = 0, next = 0;
+    const show = () => { $('#pm').textContent = T('upPar',{i:done,n:files.length}); $('#pb').style.width = Math.round(done/(files.length+1)*100)+'%'; };
+    show();
+    const worker = async () => { while (next < files.length){ const [obj,key,f0] = files[next++];
+      const f = await shrink(f0);
+      obj[key] = await gs('uploadFile', {name:f.name}, await readUrl(f), AUTH.token); done++; show(); } };
+    await Promise.all([worker(), worker(), worker()]);
     $('#pm').textContent = T('saving');
     const r = await gs('submit', P, AUTH.token);
     MINE = null; $('#go').disabled = false; $('#agree').checked = false;
