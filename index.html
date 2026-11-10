@@ -294,7 +294,9 @@ function fillProfs(){
 }
 
 function init(){
-  $('#dl').textContent = CFG.deadline || '-';
+  let dl = CFG.deadline || '-';
+  if (/^\d{4}-\d{2}-\d{2}T/.test(dl)) { const d = new Date(new Date(dl).getTime() + 9*3600e3); dl = d.toISOString().slice(0,16).replace('T',' '); }
+  $('#dl').textContent = dl;
   $('#range').textContent = (CFG.from && CFG.to) ? CFG.from + ' ~ ' + CFG.to : '-';
   const sel = $('#지도교수Sel');
   sel.onchange = () => { const etc = sel.value==='__etc'; $('#지도교수').style.display = etc?'block':'none'; $('#지도교수').value = etc ? '' : sel.value; };

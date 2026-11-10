@@ -115,7 +115,7 @@ function publicCfg_(e) {
     title: s['평가명'] || '박사재학생 장학금 연구실적 제출',
     titleEn: s['평가명(영문)'] || '',
     lang: p.lang === 'en' ? 'en' : (p.lang === 'ko' ? 'ko' : ''),
-    deadline: s['접수마감'] || '',
+    deadline: s['접수마감'] instanceof Date ? Utilities.formatDate(s['접수마감'], 'Asia/Seoul', 'yyyy-MM-dd HH:mm') : String(s['접수마감'] || ''),
     closed: deadline ? new Date() > deadline : false,
     from: s['실적인정 시작'] ? Utilities.formatDate(parseDate_(s['실적인정 시작']), 'Asia/Seoul', 'yyyy.M.d.') : '',
     to: s['실적인정 끝'] ? Utilities.formatDate(parseDate_(s['실적인정 끝']), 'Asia/Seoul', 'yyyy.M.d.') : '',
@@ -549,7 +549,9 @@ function fillProfs(){
 }
 
 function init(){
-  $('#dl').textContent = CFG.deadline || '-';
+  let dl = CFG.deadline || '-';
+  if (/^\\d{4}-\\d{2}-\\d{2}T/.test(dl)) { const d = new Date(new Date(dl).getTime() + 9*3600e3); dl = d.toISOString().slice(0,16).replace('T',' '); }
+  $('#dl').textContent = dl;
   $('#range').textContent = (CFG.from && CFG.to) ? CFG.from + ' ~ ' + CFG.to : '-';
   const sel = $('#지도교수Sel');
   sel.onchange = () => { const etc = sel.value==='__etc'; $('#지도교수').style.display = etc?'block':'none'; $('#지도교수').value = etc ? '' : sel.value; };
