@@ -274,6 +274,19 @@ function submit(p) {
     const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
     const who = (Session.getActiveUser().getEmail() || '');
 
+    // 먼저 증빙 파일이 모두 이번에 임시로 올린 파일인지 확인 (확인 전에는 아무것도 기록하지 않음)
+    const root0 = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
+    const tmpId0 = getOrCreate_(root0, '_임시업로드').getId();
+    const fids = [];
+    (p.papers || []).forEach(x => { if (x.file1) fids.push(x.file1); if (x.file2) fids.push(x.file2); });
+    (p.patents || []).forEach(x => { if (x.file) fids.push(x.file); });
+    (p.awards || []).forEach(x => { if (x.file) fids.push(x.file); });
+    fids.forEach(fid => {
+      let ok = false;
+      try { const par = DriveApp.getFileById(String(fid)).getParents(); ok = par.hasNext() && par.next().getId() === tmpId0; } catch (e) {}
+      if (!ok) throw new Error('증빙 파일을 다시 올려 주세요. / Please upload the evidence file again.');
+    });
+
     // 같은 학번 이전 제출은 '대체됨' 처리 (최신 제출만 유효)
     ['학생', '논문', '특허', '수상'].forEach(name => {
       const sh = ss.getSheetByName(name); const v = sh.getDataRange().getValues();
