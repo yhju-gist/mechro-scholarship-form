@@ -375,6 +375,7 @@ function getOrCreate_(parent, name) {
 
 /* 최종 제출 */
 function submit(p, token) {
+  const T0 = Date.now(), MS = {}, mark = k => MS[k] = Date.now() - T0;   // 단계별 걸린 시간 (속도 점검용)
   const email = who_(token);   // 인증된 GIST 메일
   const s = settings_();
   const deadline = parseDate_(s['접수마감']);
@@ -383,7 +384,7 @@ function submit(p, token) {
   if (!/[A-Za-z]/.test(String(p.영문명 || ''))) throw new Error('논문에 쓰는 영문 이름을 입력해 주세요. / Please enter the name used in your papers.');
   if (!/^\d{8}$/.test(String(p.학번).trim())) throw new Error('학번은 숫자 8자리로 입력해 주세요. / Student ID must be 8 digits.');
 
-  const lock = LockService.getScriptLock(); lock.waitLock(30000);
+  const lock = LockService.getScriptLock(); lock.waitLock(30000); mark('lock');
   try {
     const ss = ss_();
     const id = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyMMdd-HHmmss') + '-' + String(p.학번).slice(-4);
@@ -393,6 +394,7 @@ function submit(p, token) {
     // 네 시트를 한 번씩만 읽음 (속도) — 이후 확인은 모두 이 값으로
     const NAMES = ['학생', '논문', '특허', '수상'], SH = {}, V = {};
     NAMES.forEach(n => { SH[n] = ss.getSheetByName(n); V[n] = SH[n].getDataRange().getValues(); });
+    mark('read');
     const col = (n, k) => V[n][0].indexOf(k);
     const sid = String(p.학번);
 
@@ -426,6 +428,7 @@ function submit(p, token) {
       if (!ok) throw new Error('증빙 파일을 다시 올려 주세요. / Please upload the evidence file again.');
     });
 
+    mark('check');
     // 증빙 파일 → 학번_성명 폴더로 이동·이름 정리 (위에서 확인한 파일만)
     const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
     const safe = String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
@@ -457,6 +460,7 @@ function submit(p, token) {
         t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))])
     };
 
+    mark('files');
     // 같은 학번 이전 제출은 '대체됨' 처리 (최신 제출만 유효) → 새 줄 기록
     NAMES.forEach(n => {
       const ci = col(n, '학번'), cs = col(n, '상태'), a1 = [];
@@ -467,7 +471,8 @@ function submit(p, token) {
     });
 
     try { const cc = CacheService.getScriptCache(); if (!cc.get('cleaned')) { cc.put('cleaned', '1', 3600); cleanTemp_(); } } catch (e) {}   // 1시간에 한 번만
-    return { id: id, papers: papers.length, patents: patents.length, awards: awards.length, time: now };
+    mark('write');
+    return { id: id, papers: papers.length, patents: patents.length, awards: awards.length, time: now, ms: MS };
   } finally { lock.releaseLock(); }
 }
 
