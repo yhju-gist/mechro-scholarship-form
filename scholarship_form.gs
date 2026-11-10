@@ -206,22 +206,52 @@ function adminFile(key, url) {
     level = next;
   }
   if (!ok) throw new Error('증빙 폴더의 파일이 아닙니다.');
-  const b = f.getBlob();
-  return { name: f.getName(), mime: b.getContentType(), data: Utilities.base64Encode(b.getBytes()) };
+  const bytes = f.getBlob().getBytes(), kind = sniff_(bytes);
+  if (!kind) throw new Error('PDF·JPG·PNG 파일이 아닙니다.');
+  return { name: f.getName(), mime: kind.mime, data: Utilities.base64Encode(bytes) };
 }
 
 /* 파일 하나 업로드 (제출 전에 하나씩 올려 용량 한도 회피) → 파일 ID 반환 */
 function uploadFile(meta, dataUrl) {
   const s = settings_();
+  // 너무 잦은 업로드 막기 (1분에 60개 초과 시 거절)
+  const cache = CacheService.getScriptCache(), ck = 'up_' + Math.floor(Date.now() / 60000);
+  const cnt = Number(cache.get(ck) || 0) + 1; cache.put(ck, String(cnt), 120);
+  if (cnt > 60) throw new Error('잠시 후 다시 시도해 주세요. / Too many uploads, please retry shortly.');
   const m = String(dataUrl).match(/^data:([^;]*);base64,(.*)$/);
   if (!m) throw new Error('파일을 읽지 못했습니다. / Could not read the file.');
   const bytes = Utilities.base64Decode(m[2]);
   if (bytes.length > Number(s['파일최대MB'] || 15) * 1024 * 1024) throw new Error('파일이 너무 큽니다. / The file is too large.');
+  const kind = sniff_(bytes);   // 파일 내용으로 종류 판별 (확장자·브라우저 정보는 믿지 않음)
+  if (!kind) throw new Error('증빙은 PDF·JPG·PNG 파일만 올릴 수 있습니다. / Only PDF, JPG or PNG files are accepted.');
   const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
   const tmp = getOrCreate_(root, '_임시업로드');
-  const safe = String(meta.name || 'file.pdf').replace(/[\\/:*?"<>|]/g, '_');
-  const f = tmp.createFile(Utilities.newBlob(bytes, m[1] || 'application/pdf', safe));
+  const base = String(meta && meta.name || 'file').replace(/\.[^.]*$/, '').replace(/[\\/:*?"<>|]/g, '_').slice(0, 80);
+  const f = tmp.createFile(Utilities.newBlob(bytes, kind.mime, base + kind.ext));
   return f.getId();
+}
+
+/* 파일 앞부분(매직 넘버)으로 PDF·PNG·JPG만 인정 */
+function sniff_(b) {
+  const u = i => (b[i] + 256) % 256;
+  if (b.length > 4 && u(0) === 0x25 && u(1) === 0x50 && u(2) === 0x44 && u(3) === 0x46) return { mime: 'application/pdf', ext: '.pdf' };
+  if (b.length > 8 && u(0) === 0x89 && u(1) === 0x50 && u(2) === 0x4E && u(3) === 0x47) return { mime: 'image/png', ext: '.png' };
+  if (b.length > 3 && u(0) === 0xFF && u(1) === 0xD8 && u(2) === 0xFF) return { mime: 'image/jpeg', ext: '.jpg' };
+  return null;
+}
+
+/* 학생이 쓴 글자가 시트에서 수식(=, +, -, @)으로 실행되지 않게 막고 길이 제한 */
+function t_(v, max) {
+  let s = String(v == null ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').slice(0, max || 300);
+  return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+}
+
+/* 제출되지 않고 남은 임시 업로드 파일(2일 지난 것) 정리 */
+function cleanTemp_() {
+  const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
+  const it = root.getFoldersByName('_임시업로드'); if (!it.hasNext()) return;
+  const files = it.next().getFiles(), limit = Date.now() - 2 * 86400000; let n = 0;
+  while (files.hasNext() && n < 50) { const f = files.next(); if (f.getDateCreated().getTime() < limit) { f.setTrashed(true); n++; } }
 }
 
 function getOrCreate_(parent, name) {
@@ -253,12 +283,15 @@ function submit(p) {
 
     // 증빙 파일 → 학번_성명 폴더로 이동·이름 정리
     const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
-    const folder = getOrCreate_(root, p.학번 + '_' + p.성명);
+    const folder = getOrCreate_(root, p.학번 + '_' + String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40));
+    const tmpId = getOrCreate_(root, '_임시업로드').getId();
     const place = (fid, label) => {
       if (!fid) return '';
       const f = DriveApp.getFileById(fid);
+      const par = f.getParents();
+      if (!par.hasNext() || par.next().getId() !== tmpId) throw new Error('증빙 파일 오류 / Invalid file');
       const ext = (f.getName().match(/\.[^.]+$/) || ['.pdf'])[0];
-      f.setName(p.학번 + '_' + p.성명 + '_' + label + '_' + id + ext);
+      f.setName(p.학번 + '_' + String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) + '_' + label + '_' + id + ext);
       f.moveTo(folder);
       return f.getUrl();
     };
@@ -267,19 +300,20 @@ function submit(p) {
     const patents = (p.patents || []).filter(x => x.type);
     const awards = (p.awards || []).filter(x => x.type);
 
-    ss.getSheetByName('학생').appendRow([id, now, '유효', "'" + p.학번, p.성명, p.과정, p.재학학기, p.지도교수,
-      p.이메일 || '', who, papers.length, patents.length, awards.length, folder.getUrl(), p.메모 || '']);
+    ss.getSheetByName('학생').appendRow([id, now, '유효', "'" + p.학번, t_(p.성명, 60), t_(p.과정, 20), t_(p.재학학기, 10), t_(p.지도교수, 40),
+      t_(p.이메일, 100), who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000)]);
 
     papers.forEach((x, i) => ss.getSheetByName('논문').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
-      x.journal, x.title || '', x.doi || '', x.accept || '', x.role, Number(x.authors) || '',
+      t_(x.journal, 200), t_(x.title, 400), t_(x.doi, 120), t_(x.accept, 20), t_(x.role, 10), Number(x.authors) || '',
       place(x.file1, '논문' + (i + 1)), place(x.file2, '논문' + (i + 1) + '_추가')]));
 
     patents.forEach((x, i) => ss.getSheetByName('특허').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
-      x.type, x.name || '', x.no || '', x.date || '', Number(x.share) || '', place(x.file, '특허' + (i + 1))]));
+      t_(x.type, 10), t_(x.name, 300), t_(x.no, 60), t_(x.date, 20), Number(x.share) || '', place(x.file, '특허' + (i + 1))]));
 
     awards.forEach((x, i) => ss.getSheetByName('수상').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
-      x.type, x.event || '', x.prize || '', x.date || '', place(x.file, '수상' + (i + 1))]));
+      t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))]));
 
+    try { cleanTemp_(); } catch (e) {}
     return { id: id, papers: papers.length, patents: patents.length, awards: awards.length, time: now };
   } finally { lock.releaseLock(); }
 }
@@ -564,9 +598,9 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
         </div><div class="err" data-t="roleErr"></div></div>
       <div class="f" data-k="authors"><label><span data-t="authors"></span><span class="req">*</span></label><input name="authors" type="number" min="1" inputmode="numeric" data-ph="authorsPh"><div class="err" data-t="authorsErr"></div></div>
       <div class="f full" data-k="file1"><label><span data-t="file1"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file1" accept=".pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="file1Ph"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file1" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="file1Ph"></span></label><div class="err" data-t="fileErr"></div></div>
       <div class="f full"><label><span data-t="file2"></span><span class="opt" data-t="file2Opt"></span></label>
-        <label class="file"><input type="file" name="file2" accept=".pdf,image/*"><span class="ico">＋</span><span class="t" data-t="choose"></span></label></div>
+        <label class="file"><input type="file" name="file2" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">＋</span><span class="t" data-t="choose"></span></label></div>
     </div>
   </div>
 </template>
@@ -587,7 +621,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
       <div class="f"><label data-t="pdate"></label><input name="date" type="date"></div>
       <div class="f" data-k="share"><label><span data-t="share"></span><span class="req">*</span></label><input name="share" type="number" min="1" max="100" inputmode="numeric" data-ph="sharePh"><div class="err" data-t="shareErr"></div></div>
       <div class="f" data-k="file"><label><span data-t="pfile"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file" accept=".pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
     </div>
   </div>
 </template>
@@ -605,7 +639,7 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
       <div class="f"><label data-t="aprize"></label><input name="prize" data-ph="aprizePh"></div>
       <div class="f"><label data-t="adate"></label><input name="date" type="date"></div>
       <div class="f" data-k="file"><label><span data-t="afile"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file" accept=".pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
     </div>
   </div>
 </template>
@@ -636,7 +670,7 @@ const I18N = {
   ptype:'구분',kApp:'국내 출원',kReg:'국내 등록',iApp:'국제 출원',iReg:'국제 등록',typeErr:'구분을 골라 주세요.',pname:'발명의 명칭',pno:'출원·등록번호',pdate:'출원·등록일',share:'나의 기여도(%)',sharePh:'예) 30',shareErr:'1~100 사이로 입력해 주세요.',pfile:'증빙 (출원서·등록증, 기여도 표시)',
   aDom:'국내 학회·대회',aInt:'해외(국제) 학회·대회',aevent:'학회·대회명',aprize:'수상명',aprizePh:'예) Best Paper Award',adate:'수상일',afile:'증빙 (상장 등)',
   contact:'문의',closed:'접수가 마감되었습니다',emptyP:'논문 실적이 없으면 비워 두세요.',emptyT:'특허 실적이 없으면 비워 두세요.',emptyA:'수상 실적이 없으면 비워 두세요.',
-  selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
+  selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',badType:'PDF·JPG·PNG 파일만 올릴 수 있습니다.',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
   sending:'제출하는 중',uploading:'증빙 파일을 올리고 있습니다…',upN:'증빙 파일 {i} / {n} 올리는 중',saving:'접수 기록 중…',noClose:'창을 닫지 마세요.',
   done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기',previewBanner:'미리보기 화면입니다 — 담당자가 접수를 열면 제출할 수 있습니다.',previewErr:'아직 접수가 열리지 않았습니다.'},
  en:{brand:'GIST · Dept. of Mechanical and Robotics Engineering',lead:'Enter your papers, patents and awards and upload the evidence. The office verifies them against the documents and JCR.',deadline:'Deadline',period:'Eligible period',acceptBasis:'(by acceptance date)',
@@ -654,7 +688,7 @@ const I18N = {
   ptype:'Type',kApp:'Korean application',kReg:'Korean registration',iApp:'International application',iReg:'International registration',typeErr:'Choose the type.',pname:'Title of invention',pno:'Application / registration no.',pdate:'Filing / registration date',share:'Your share (%)',sharePh:'e.g. 30',shareErr:'Enter a number from 1 to 100.',pfile:'Evidence (application / certificate showing shares)',
   aDom:'Domestic conference / competition',aInt:'International conference / competition',aevent:'Conference / competition',aprize:'Award title',aprizePh:'e.g. Best Paper Award',adate:'Award date',afile:'Evidence (certificate etc.)',
   contact:'Contact',closed:'Submissions are closed',emptyP:'Leave empty if you have no papers.',emptyT:'Leave empty if you have no patents.',emptyA:'Leave empty if you have no awards.',
-  selProf:'Select',etcProf:'Not in the list (type it)',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
+  selProf:'Select',etcProf:'Not in the list (type it)',badType:'Only PDF, JPG or PNG files can be uploaded.',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
   sending:'Submitting',uploading:'Uploading evidence files…',upN:'Uploading file {i} of {n}',saving:'Saving your submission…',noClose:'Please do not close this window.',
   done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back',previewBanner:'Preview — submissions open once the office connects the form.',previewErr:'Submissions are not open yet.'}
 };
@@ -708,6 +742,7 @@ function mount(tplId, boxId){
   node.querySelectorAll('.file input').forEach(inp => inp.onchange = () => {
     const f = inp.files[0], box = inp.parentElement;
     if (f && f.size > CFG.maxMb*1024*1024){ alert(T('tooBig',{mb:CFG.maxMb})); inp.value=''; }
+    else if (f && !/\\.(pdf|jpe?g|png)$/i.test(f.name)){ alert(T('badType')); inp.value=''; }
     const ok = !!inp.files[0];
     box.classList.toggle('has', ok); box.querySelector('.t').textContent = ok ? inp.files[0].name : T('choose'); box.querySelector('.ico').textContent = ok ? '✓' : 'PDF';
   });
@@ -842,6 +877,8 @@ function renderAdmin(){
   if (!list.length){ $('#aList').innerHTML = '<div class="card empty-a">아직 제출이 없습니다.</div>'; return; }
   $('#aList').innerHTML = list.map((s,i) => {
     const pil = s['상태']==='유효' ? '<span class="pill ok">유효</span>' : '<span class="pill old">대체됨</span>';
+    const nSub = all.filter(x => x['학번']===s['학번']).length;
+    const rep = nSub > 1 ? \`<span class="pill old" title="같은 학번으로 \${nSub}번 제출됨 — '이전 제출도 보기'로 비교">제출 \${nSub}회</span>\` : '';
     const ev = (u,label) => u ? \`<button class="btn sm evbtn" type="button" data-u="\${esc(u)}" data-l="\${esc(s['학번']+' '+s['성명']+' '+label)}">📄 \${label}</button>\` : '<span class="sub">없음</span>';
     const papers = s.papers.map(p => \`<tr><td>\${esc(p['순번'])}</td><td><b>\${esc(p['저널명(학생)'])}</b><div class="sub">\${esc(p['논문제목'])}</div><div class="sub">\${esc(p['DOI'])}</div></td><td>\${esc(p['Accept일'])}</td><td>\${esc(p['역할(학생)'])}</td><td>\${esc(p['저자수(학생)'])}</td><td>\${ev(p['증빙1'],'증빙')} \${p['증빙2']?ev(p['증빙2'],'추가'):''}</td><td>\${p['IF(JCR)']?esc(p['순위']+'/'+p['전체']+' · IF '+p['IF(JCR)']):'<span class="sub">검증 전</span>'}</td></tr>\`).join('');
     const pats = s.patents.map(p => \`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['명칭'])}<div class="sub">\${esc(p['출원·등록번호'])} \${esc(p['일자'])}</div></td><td>\${esc(p['기여도(%)'])}%</td><td>\${ev(p['증빙'],'증빙')}</td></tr>\`).join('');
@@ -849,7 +886,7 @@ function renderAdmin(){
     return \`<div class="a-row" id="ar\${i}">
       <div class="a-head" onclick="this.parentElement.classList.toggle('open')">
         <div><div class="nm">\${esc(s['성명'])}</div><div class="sub">\${esc(s['학번'])}</div></div>
-        <div>\${pil}<span class="pill">\${esc(s['과정'])}</span><span class="sub">\${esc(s['재학학기'] ? s['재학학기']+'학기' : '')}</span></div>
+        <div>\${pil}\${rep}<span class="pill">\${esc(s['과정'])}</span><span class="sub">\${esc(s['재학학기'] ? s['재학학기']+'학기' : '')}</span></div>
         <div><span class="sub">지도교수</span><div>\${esc(s['지도교수'])}</div></div>
         <div class="hide-m"><span class="pill">논문 \${s.papers.length}</span><span class="pill">특허 \${s.patents.length}</span><span class="pill">수상 \${s.awards.length}</span></div>
         <div class="hide-m sub">\${esc(s['접수시각'])}</div>
@@ -873,11 +910,17 @@ async function viewFile(url, label){
   try{
     const f = await gs('adminFile', ADM.key, url);
     const bin = atob(f.data), arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    // 파일 내용으로 종류를 다시 확인 — PDF·PNG·JPG만 화면에 띄움
+    const kind = (arr[0]===0x25&&arr[1]===0x50&&arr[2]===0x44&&arr[3]===0x46) ? 'application/pdf'
+               : (arr[0]===0x89&&arr[1]===0x50&&arr[2]===0x4E&&arr[3]===0x47) ? 'image/png'
+               : (arr[0]===0xFF&&arr[1]===0xD8&&arr[2]===0xFF) ? 'image/jpeg' : '';
     if (VURL) URL.revokeObjectURL(VURL);
-    VURL = URL.createObjectURL(new Blob([arr], {type: f.mime}));
-    $('#vName').textContent = f.name; $('#vOpen').href = VURL; $('#vDown').href = VURL; $('#vDown').download = f.name;
-    if (f.mime.startsWith('image/')) { $('#vBody').innerHTML = \`<img src="\${VURL}" alt="">\`; return; }
-    try { await renderPdf(arr); } catch(err) { $('#vBody').innerHTML = \`<iframe src="\${VURL}" title="증빙"></iframe>\`; }
+    VURL = URL.createObjectURL(new Blob([arr], {type: kind || 'application/octet-stream'}));
+    $('#vName').textContent = f.name; $('#vDown').href = VURL; $('#vDown').download = f.name;
+    $('#vOpen').style.display = kind ? '' : 'none'; $('#vOpen').href = kind ? VURL : '#';
+    if (!kind) { $('#vBody').innerHTML = '<p style="padding:30px">PDF·JPG·PNG가 아닌 파일이라 화면에 띄우지 않습니다. 필요하면 내려받아 확인하세요.</p>'; return; }
+    if (kind.startsWith('image/')) { $('#vBody').innerHTML = \`<img src="\${VURL}" alt="">\`; return; }
+    try { await renderPdf(arr); } catch(err) { $('#vBody').innerHTML = \`<iframe src="\${VURL}" title="증빙" sandbox></iframe>\`; }
   }catch(e){ $('#vName').textContent = label; $('#vBody').innerHTML = \`<p style="padding:30px">\${esc((e && e.message) || e)}</p>\`; }
 }
 function loadPdfJs(){
