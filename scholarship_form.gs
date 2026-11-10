@@ -240,16 +240,28 @@ function verifyCode(email, code) {
   if (o.tries > 5) { c.remove('otp_' + e); throw new Error('5번 틀려 인증번호가 무효가 되었습니다. 다시 받아 주세요. / Too many attempts. Request a new code.'); }
   if (String(code || '').trim() !== o.code) { c.put('otp_' + e, JSON.stringify(o), 600); throw new Error('인증번호가 맞지 않습니다. / Incorrect code.'); }
   c.remove('otp_' + e);
-  const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
-  c.put('tok_' + token, e, 21600);   // 6시간
-  return { token: token, email: e, hours: 6 };
+  return { token: signTok_(e, Date.now() + 6 * 3600e3), email: e, hours: 6 };
 }
 
+/* 본인 확인 표 — 서버에 따로 저장하지 않고 서명으로 확인 (캐시가 지워져도 6시간 동안 유지) */
+const hex_ = bytes => bytes.map(b => ('0' + ((b + 256) % 256).toString(16)).slice(-2)).join('');
+function tokKey_() {
+  const P = PropertiesService.getScriptProperties(); let k = P.getProperty('TOKEN_KEY');
+  if (!k) { k = Utilities.getUuid() + Utilities.getUuid(); P.setProperty('TOKEN_KEY', k); }
+  return k;
+}
+function signTok_(email, exp) {
+  const msg = email + '|' + Math.floor(exp);
+  return hex_(Utilities.newBlob(email).getBytes()) + '.' + Math.floor(exp) + '.' + hex_(Utilities.computeHmacSha256Signature(msg, tokKey_()));
+}
 function who_(token) {
-  const t = String(token || '').replace(/[^a-f0-9]/g, '').slice(0, 64);
-  const e = t.length === 64 ? CacheService.getScriptCache().get('tok_' + t) : null;
-  if (!e) throw new Error('LOGIN: 본인 확인이 만료되었습니다. 다시 인증해 주세요. / Your session has expired. Please verify again.');
-  return e;
+  const fail = () => { throw new Error('LOGIN: 본인 확인이 만료되었습니다. 다시 인증해 주세요. / Your session has expired. Please verify again.'); };
+  const m = String(token || '').match(/^([0-9a-f]{2,400})\.(\d{13})\.([0-9a-f]{64})$/);
+  if (!m || Number(m[2]) < Date.now()) fail();
+  let email = '';
+  try { email = Utilities.newBlob(m[1].match(/../g).map(h => { const v = parseInt(h, 16); return v > 127 ? v - 256 : v; })).getDataAsString(); } catch (e) { fail(); }
+  if (signTok_(email, Number(m[2])) !== m[0] || !emailOk_(email)) fail();
+  return email;
 }
 
 /* 이 메일로 낸 제출의 증빙 파일 ID 목록 */
