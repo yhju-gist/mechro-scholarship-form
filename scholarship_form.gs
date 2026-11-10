@@ -34,7 +34,7 @@ const DEFAULT_SETTINGS = [
   ['접수마감', '2026-12-04 23:59', '이 시각 이후 제출 막힘 (yyyy-MM-dd HH:mm)'],
   ['실적인정 시작', '2025-09-01', 'Accept일이 이 날짜 이전이면 더블체크 표시'],
   ['실적인정 끝', '2026-08-31', 'Accept일이 이 날짜 이후면 더블체크 표시'],
-  ['지도교수 목록', '', '쉼표로 구분 (비우면 직접 입력)'],
+  ['지도교수 목록', '고광희/Kwang Hee Ko, 김민경/Minkyung Kim, 김태성/Taeseong Kim, 김표진/Pyojin Kim, 배진현/Jinhyun Bae, 설재훈/Jae Hun Seol, 안효성/Hyo Sung Ahn, 양성/Sung Yang, 오현석/Hyunseok Oh, 이승현/Seunghyun Lee, 이재욱/Jaewook Lee, 정성호/Sungho Jeong, 지솔근/Solkeun Jee, 최성임/Seongim Choi, 허필원/Pilwon Hur, Arshad Afzal', '쉼표로 구분, "한글/영문" (기계로봇공학과 홈페이지 학과교수 2026-11-10 기준)'],
   ['담당자', '기계로봇공학과 류지나 (T.2383)', '하단 문의처'],
   ['담당자(영문)', 'Jina Ryu, Dept. of Mechanical and Robotics Engineering (ext. 2383)', '영어 화면 하단 문의처'],
   ['안내문', '논문 첫 페이지(저자·소속이 보이는 쪽)나 논문 PDF를 꼭 올려 주세요. 아직 게재 전이면 Accept 메일을 함께 올려 주세요.', '입력 화면 상단 안내'],
@@ -75,8 +75,18 @@ function setup() {
     const f = DriveApp.createFolder('박사재학생 장학금 증빙(학생 제출)');
     props.setProperty('FOLDER_ID', f.getId());
   }
+  if (!props.getProperty('ADMIN_KEY')) makeAdminKey();
   Logger.log('시트: ' + ss.getUrl());
   Logger.log('증빙 폴더: ' + DriveApp.getFolderById(props.getProperty('FOLDER_ID')).getUrl());
+}
+
+/* 관리자 비밀번호 새로 만들기 — 실행하면 실행 로그에 새 비밀번호가 나옵니다(이전 비밀번호는 무효) */
+function makeAdminKey() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let k = ''; for (let i = 0; i < 10; i++) k += chars[Math.floor(Math.random() * chars.length)];
+  PropertiesService.getScriptProperties().setProperty('ADMIN_KEY', k);
+  Logger.log('관리자 비밀번호: ' + k);
+  return k;
 }
 
 function onOpen() {
@@ -147,10 +157,57 @@ function doPost(e) {
     const req = JSON.parse(e.postData.contents);
     if (req.action === 'uploadFile') return json_({ ok: true, data: uploadFile(req.args[0], req.args[1]) });
     if (req.action === 'submit') return json_({ ok: true, data: submit(req.args[0]) });
+    if (req.action === 'adminList') return json_({ ok: true, data: adminList(req.args[0]) });
+    if (req.action === 'adminFile') return json_({ ok: true, data: adminFile(req.args[0], req.args[1]) });
     throw new Error('알 수 없는 요청 / Unknown request');
   } catch (err) {
     return json_({ ok: false, error: String(err && err.message || err) });
   }
+}
+
+/* ---------------- 관리자(담당자) 화면용 ---------------- */
+function checkAdmin_(key) {
+  const k = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (!k || String(key || '') !== k) { Utilities.sleep(1500); throw new Error('관리자 비밀번호가 맞지 않습니다.'); }
+}
+
+function sheetObjects_(name) {
+  const v = ss_().getSheetByName(name).getDataRange().getDisplayValues();
+  const h = v[0];
+  return v.slice(1).filter(r => r.join('') !== '').map(r => { const o = {}; h.forEach((k, i) => o[k] = r[i]); return o; });
+}
+
+function adminList(key) {
+  checkAdmin_(key);
+  const by = {};
+  sheetObjects_('학생').forEach(s => { by[s['접수번호']] = Object.assign({ papers: [], patents: [], awards: [] }, s); });
+  [['논문', 'papers'], ['특허', 'patents'], ['수상', 'awards']].forEach(([n, k]) =>
+    sheetObjects_(n).forEach(r => { if (by[r['접수번호']]) by[r['접수번호']][k].push(r); }));
+  const props = PropertiesService.getScriptProperties();
+  return {
+    students: Object.keys(by).map(k => by[k]).sort((a, b) => String(b['접수시각']).localeCompare(String(a['접수시각']))),
+    sheetUrl: ss_().getUrl(),
+    folderUrl: DriveApp.getFolderById(props.getProperty('FOLDER_ID')).getUrl(),
+    now: Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')
+  };
+}
+
+/* 증빙 파일 내용을 관리자 화면에 보여 주기 (증빙 폴더 안의 파일만) */
+function adminFile(key, url) {
+  checkAdmin_(key);
+  const m = String(url).match(/[-\w]{25,}/);
+  if (!m) throw new Error('파일 주소가 올바르지 않습니다.');
+  const f = DriveApp.getFileById(m[0]);
+  const root = PropertiesService.getScriptProperties().getProperty('FOLDER_ID');
+  let ok = false, level = [f.getParents()];
+  for (let d = 0; d < 4 && !ok && level.length; d++) {
+    const next = [];
+    level.forEach(it => { while (it.hasNext()) { const p = it.next(); if (p.getId() === root) ok = true; next.push(p.getParents()); } });
+    level = next;
+  }
+  if (!ok) throw new Error('증빙 폴더의 파일이 아닙니다.');
+  const b = f.getBlob();
+  return { name: f.getName(), mime: b.getContentType(), data: Utilities.base64Encode(b.getBytes()) };
 }
 
 /* 파일 하나 업로드 (제출 전에 하나씩 올려 용량 한도 회피) → 파일 ID 반환 */
@@ -342,6 +399,52 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
 .lang{position:absolute;top:12px;right:12px;z-index:20;display:flex;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:3px}
 .lang button{border:none;background:none;color:#fff;font:inherit;font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:999px;cursor:pointer;opacity:.75}
 .lang button.on{background:#fff;color:#1B1F23;opacity:1}
+
+/* ---------- 관리자 화면 ---------- */
+.adminlink{display:block;text-align:center;margin:10px auto 0;color:var(--mute);font-size:12px;text-decoration:none;opacity:.7}
+.adminlink:hover{opacity:1;color:var(--red)}
+#admin{max-width:1180px;margin:-44px auto 0;padding:0 16px 80px;position:relative;z-index:2}
+.a-login{max-width:420px;margin:0 auto}
+.a-top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.a-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:760px){.a-stats{grid-template-columns:repeat(2,1fr)}}
+.a-stat{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 24px rgba(27,31,35,.06)}
+.a-stat b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.a-stat span{font-size:12.5px;color:var(--mute)}
+.a-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.a-tools input[type=search]{width:240px;padding:9px 12px}
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:9px 14px;font:inherit;font-size:13.5px;font-weight:700;color:var(--ink);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--red);color:var(--red)}
+.btn.red{background:var(--red);border-color:var(--red);color:#fff}
+.btn.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+.a-list{display:flex;flex-direction:column;gap:10px}
+.a-row{background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 6px 18px rgba(27,31,35,.05);overflow:hidden}
+.a-head{display:grid;grid-template-columns:110px 1.2fr 1fr 1fr 150px 160px 24px;gap:10px;align-items:center;padding:14px 18px;cursor:pointer}
+.a-head:hover{background:#FAFAF9}
+@media(max-width:860px){.a-head{grid-template-columns:1fr 1fr;row-gap:4px}.a-head .hide-m{display:none}}
+.a-head .nm{font-weight:800}
+.a-head .sub{font-size:12.5px;color:var(--mute)}
+.pill{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:700;background:#F0F2F1;color:var(--gray);margin-right:4px}
+.pill.old{background:#FFF4E0;color:var(--warn)}
+.pill.ok{background:var(--ok-s);color:var(--ok)}
+.a-body{display:none;border-top:1px solid var(--line);padding:14px 18px 18px;background:#FCFCFB}
+.a-row.open .a-body{display:block}
+.a-row.open .chev{transform:rotate(90deg)}
+.chev{transition:.15s;color:var(--mute)}
+.a-body h4{margin:14px 0 8px;font-size:13.5px;color:var(--gray)}
+.a-body h4:first-child{margin-top:0}
+.a-tbl{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}
+.a-tbl th{background:#F2F4F3;text-align:left;padding:8px 10px;font-size:12px;color:var(--gray);white-space:nowrap}
+.a-tbl td{border-top:1px solid var(--line);padding:8px 10px;vertical-align:top}
+.a-wrap{overflow-x:auto}
+.viewer{position:fixed;inset:0;background:rgba(27,31,35,.72);display:none;z-index:30;padding:20px}
+.viewer.on{display:flex;flex-direction:column}
+.viewer .vbar{display:flex;gap:8px;align-items:center;color:#fff;margin-bottom:10px}
+.viewer .vbar b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.viewer .vbody{flex:1;background:#fff;border-radius:12px;overflow:auto;display:flex;align-items:center;justify-content:center}
+.viewer iframe{width:100%;height:100%;border:0}
+.viewer img{max-width:100%;max-height:100%}
+.empty-a{text-align:center;color:var(--mute);padding:40px 0}
 </style>
 </head>
 <body>
@@ -401,7 +504,41 @@ footer{text-align:center;color:var(--mute);font-size:12px;margin-top:24px}
     <label class="check" id="agreeBox"><input type="checkbox" id="agree"><span data-t="agree"></span></label>
   </section>
   <footer id="contact"></footer>
+  <a class="adminlink" href="#admin">관리자</a>
 </main>
+
+<section id="admin" hidden>
+  <div class="card a-login" id="aLogin">
+    <h2><span class="num">⚙</span>담당자 화면</h2>
+    <p class="desc">학생 제출 목록과 증빙 PDF를 봅니다. 담당자 비밀번호를 넣어 주세요.</p>
+    <div class="f" id="aKeyBox"><input id="aKey" type="password" placeholder="관리자 비밀번호" autocomplete="current-password"><div class="err" id="aErr"></div></div>
+    <div style="display:flex;gap:8px;margin-top:14px"><button class="btn red" type="button" onclick="adminLogin()">들어가기</button><a class="btn" href="#">← 제출 화면</a></div>
+  </div>
+  <div id="aMain" hidden>
+    <div class="a-stats" id="aStats"></div>
+    <div class="card" style="padding:16px 18px">
+      <div class="a-top">
+        <div class="a-tools">
+          <input type="search" id="aQ" placeholder="이름·학번·지도교수·저널 검색" oninput="renderAdmin()">
+          <label class="check" style="font-size:13px"><input type="checkbox" id="aOld" onchange="renderAdmin()" style="width:16px;height:16px">이전 제출(대체됨)도 보기</label>
+        </div>
+        <div class="a-tools">
+          <button class="btn" type="button" onclick="loadAdmin()">↻ 새로고침</button>
+          <button class="btn" type="button" onclick="adminCsv()">⬇ 목록 CSV</button>
+          <a class="btn" id="aSheet" target="_blank" rel="noopener">구글 시트</a>
+          <button class="btn" type="button" onclick="adminLogout()">나가기</button>
+        </div>
+      </div>
+      <div class="sub" id="aNow" style="font-size:12px;color:var(--mute)"></div>
+    </div>
+    <div class="a-list" id="aList"></div>
+  </div>
+</section>
+
+<div class="viewer" id="viewer">
+  <div class="vbar"><b id="vName"></b><a class="btn sm" id="vOpen" target="_blank" rel="noopener">새 창</a><a class="btn sm" id="vDown">내려받기</a><button class="btn sm" type="button" onclick="closeViewer()">닫기 ✕</button></div>
+  <div class="vbody" id="vBody"></div>
+</div>
 
 <div class="bar"><div class="in">
   <div class="sum"><span data-t="cntP"></span> <b id="sP">0</b> · <span data-t="cntT"></span> <b id="sT">0</b> · <span data-t="cntA"></span> <b id="sA">0</b></div>
@@ -544,7 +681,7 @@ function setLang(l){
 function fillProfs(){
   const sel = $('#지도교수Sel'); if (!CFG.profs.length){ sel.style.display='none'; $('#지도교수').style.display='block'; return; }
   const cur = sel.value;
-  sel.innerHTML = \`<option value="">\${T('selProf')}</option>\` + CFG.profs.map(p=>\`<option>\${p}</option>\`).join('') + \`<option value="__etc">\${T('etcProf')}</option>\`;
+  sel.innerHTML = \`<option value="">\${T('selProf')}</option>\` + CFG.profs.map(p=>{ const [ko,en] = String(p).split('/').map(s=>s.trim()); const lab = LANG==='en' && en ? \`\${en} (\${ko})\` : (en ? \`\${ko} · \${en}\` : ko); return \`<option value="\${esc(ko)}">\${esc(lab)}</option>\`; }).join('') + \`<option value="__etc">\${T('etcProf')}</option>\`;
   sel.value = cur;
 }
 
@@ -663,10 +800,108 @@ async function send(){
     $('#go').disabled = false;
   }
 }
+/* ================= 담당자(관리자) 화면 ================= */
+let ADM = { key:'', data:null };
+const ss_get = k => { try { return sessionStorage.getItem(k) || ''; } catch(e) { return ''; } };
+const ss_set = (k,v) => { try { v ? sessionStorage.setItem(k,v) : sessionStorage.removeItem(k); } catch(e) {} };
+function route(){
+  const isA = location.hash === '#admin';
+  $('#app').hidden = isA; document.querySelector('.bar').style.display = isA ? 'none' : '';
+  $('#admin').hidden = !isA; document.querySelector('.chips').style.display = isA ? 'none' : '';
+  $('#title').textContent = isA ? '장학금 연구실적 — 담당자 화면' : ((LANG==='en' && CFG.titleEn) || CFG.title);
+  document.querySelector('.lang').style.display = isA ? 'none' : '';
+  document.querySelector('[data-t=lead]').textContent = isA ? '학생 제출 목록을 보고 증빙 PDF를 바로 열어 봅니다.' : T('lead');
+  document.querySelector('[data-t=brand]').textContent = isA ? 'GIST · 기계로봇공학과' : T('brand');
+  if (isA){ ADM.key = ADM.key || ss_get('admKey'); if (ADM.key && !ADM.data) loadAdmin(); else showAdmin(!!ADM.data); }
+}
+function showAdmin(inside){ $('#aLogin').hidden = inside; $('#aMain').hidden = !inside; }
+async function adminLogin(){ ADM.key = $('#aKey').value.trim(); if (!ADM.key) return; await loadAdmin(); }
+function adminLogout(){ ADM = {key:'', data:null}; ss_set('admKey',''); $('#aKey').value=''; showAdmin(false); }
+async function loadAdmin(){
+  $('#aErr').textContent=''; $('#aKeyBox').classList.remove('bad');
+  $('#aNow').textContent = '불러오는 중…';
+  try{
+    ADM.data = await gs('adminList', ADM.key); ss_set('admKey', ADM.key);
+    $('#aSheet').href = ADM.data.sheetUrl; showAdmin(true); renderAdmin();
+  }catch(e){
+    ADM.data = null; ss_set('admKey',''); showAdmin(false);
+    $('#aErr').textContent = (e && e.message) || String(e); $('#aKeyBox').classList.add('bad');
+  }
+}
+const nItems = s => s.papers.length + s.patents.length + s.awards.length;
+function renderAdmin(){
+  const D = ADM.data; if (!D) return;
+  const all = D.students, valid = all.filter(s => s['상태']==='유효');
+  const sum = k => valid.reduce((a,s)=>a+s[k].length,0);
+  const last = valid[0] ? valid[0]['접수시각'] : '-';
+  $('#aStats').innerHTML = [['제출 학생',valid.length+'명'],['논문',sum('papers')+'편'],['특허',sum('patents')+'건'],['수상',sum('awards')+'건'],['최근 접수',last.slice(5,16)||'-']]
+    .map(([a,b])=>\`<div class="a-stat"><span>\${a}</span><b>\${esc(b)}</b></div>\`).join('');
+  $('#aNow').textContent = \`\${D.now} 기준 · 같은 학번은 마지막 제출만 '유효' · 행을 누르면 실적과 증빙이 열립니다\`;
+  const q = $('#aQ').value.trim().toLowerCase(), old = $('#aOld').checked;
+  const list = all.filter(s => (old || s['상태']==='유효') && (!q || JSON.stringify(s).toLowerCase().includes(q)));
+  if (!list.length){ $('#aList').innerHTML = '<div class="card empty-a">아직 제출이 없습니다.</div>'; return; }
+  $('#aList').innerHTML = list.map((s,i) => {
+    const pil = s['상태']==='유효' ? '<span class="pill ok">유효</span>' : '<span class="pill old">대체됨</span>';
+    const ev = (u,label) => u ? \`<button class="btn sm evbtn" type="button" data-u="\${esc(u)}" data-l="\${esc(s['학번']+' '+s['성명']+' '+label)}">📄 \${label}</button>\` : '<span class="sub">없음</span>';
+    const papers = s.papers.map(p => \`<tr><td>\${esc(p['순번'])}</td><td><b>\${esc(p['저널명(학생)'])}</b><div class="sub">\${esc(p['논문제목'])}</div><div class="sub">\${esc(p['DOI'])}</div></td><td>\${esc(p['Accept일'])}</td><td>\${esc(p['역할(학생)'])}</td><td>\${esc(p['저자수(학생)'])}</td><td>\${ev(p['증빙1'],'증빙')} \${p['증빙2']?ev(p['증빙2'],'추가'):''}</td><td>\${p['IF(JCR)']?esc(p['순위']+'/'+p['전체']+' · IF '+p['IF(JCR)']):'<span class="sub">검증 전</span>'}</td></tr>\`).join('');
+    const pats = s.patents.map(p => \`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['명칭'])}<div class="sub">\${esc(p['출원·등록번호'])} \${esc(p['일자'])}</div></td><td>\${esc(p['기여도(%)'])}%</td><td>\${ev(p['증빙'],'증빙')}</td></tr>\`).join('');
+    const aws = s.awards.map(p => \`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['학회·대회명'])}<div class="sub">\${esc(p['수상명'])} \${esc(p['일자'])}</div></td><td>\${ev(p['증빙'],'증빙')}</td></tr>\`).join('');
+    return \`<div class="a-row" id="ar\${i}">
+      <div class="a-head" onclick="this.parentElement.classList.toggle('open')">
+        <div><div class="nm">\${esc(s['성명'])}</div><div class="sub">\${esc(s['학번'])}</div></div>
+        <div>\${pil}<span class="pill">\${esc(s['과정'])}</span><span class="sub">\${esc(s['재학학기'] ? s['재학학기']+'학기' : '')}</span></div>
+        <div><span class="sub">지도교수</span><div>\${esc(s['지도교수'])}</div></div>
+        <div class="hide-m"><span class="pill">논문 \${s.papers.length}</span><span class="pill">특허 \${s.patents.length}</span><span class="pill">수상 \${s.awards.length}</span></div>
+        <div class="hide-m sub">\${esc(s['접수시각'])}</div>
+        <div class="hide-m sub">\${esc(s['접수번호'])}</div>
+        <div class="chev">›</div>
+      </div>
+      <div class="a-body">
+        \${s['학생메모'] ? \`<div class="notice" style="margin-bottom:12px">학생 메모: \${esc(s['학생메모'])}</div>\` : ''}
+        <h4>SCI 논문 \${s.papers.length}편</h4>
+        \${s.papers.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>저널 / 제목</th><th>Accept</th><th>역할</th><th>저자수</th><th>증빙</th><th>JCR</th></tr>\${papers}</table></div>\` : '<div class="sub">없음</div>'}
+        <h4>특허 \${s.patents.length}건</h4>
+        \${s.patents.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>구분</th><th>명칭</th><th>기여도</th><th>증빙</th></tr>\${pats}</table></div>\` : '<div class="sub">없음</div>'}
+        <h4>수상 \${s.awards.length}건</h4>
+        \${s.awards.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>구분</th><th>학회·대회 / 수상</th><th>증빙</th></tr>\${aws}</table></div>\` : '<div class="sub">없음</div>'}
+      </div></div>\`;
+  }).join('');
+}
+let VURL = '';
+async function viewFile(url, label){
+  const v = $('#viewer'); v.classList.add('on'); $('#vName').textContent = label + ' — 불러오는 중…'; $('#vBody').innerHTML = '';
+  try{
+    const f = await gs('adminFile', ADM.key, url);
+    const bin = atob(f.data), arr = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+    if (VURL) URL.revokeObjectURL(VURL);
+    VURL = URL.createObjectURL(new Blob([arr], {type: f.mime}));
+    $('#vName').textContent = f.name; $('#vOpen').href = VURL; $('#vDown').href = VURL; $('#vDown').download = f.name;
+    $('#vBody').innerHTML = f.mime.startsWith('image/') ? \`<img src="\${VURL}" alt="">\` : \`<iframe src="\${VURL}" title="증빙"></iframe>\`;
+  }catch(e){ $('#vName').textContent = label; $('#vBody').innerHTML = \`<p style="padding:30px">\${esc((e && e.message) || e)}</p>\`; }
+}
+function closeViewer(){ $('#viewer').classList.remove('on'); $('#vBody').innerHTML=''; }
+document.addEventListener('keydown', e => { if (e.key==='Escape') closeViewer(); });
+function adminCsv(){
+  const D = ADM.data; if (!D) return;
+  const rows = [['상태','접수번호','접수시각','학번','성명','과정','재학학기','지도교수','구분','순번','내용','세부','날짜','역할/구분','저자수/기여도','증빙']];
+  D.students.forEach(s => {
+    const base = [s['상태'],s['접수번호'],s['접수시각'],s['학번'],s['성명'],s['과정'],s['재학학기'],s['지도교수']];
+    s.papers.forEach(p => rows.push(base.concat(['논문',p['순번'],p['저널명(학생)'],p['논문제목'],p['Accept일'],p['역할(학생)'],p['저자수(학생)'],p['증빙1']])));
+    s.patents.forEach(p => rows.push(base.concat(['특허',p['순번'],p['명칭'],p['출원·등록번호'],p['일자'],p['구분'],p['기여도(%)'],p['증빙']])));
+    s.awards.forEach(p => rows.push(base.concat(['수상',p['순번'],p['학회·대회명'],p['수상명'],p['일자'],p['구분'],'',p['증빙']])));
+    if (!nItems(s)) rows.push(base.concat(['','','','','','','','']));
+  });
+  const csv = '\\ufeff' + rows.map(r => r.map(x => '"' + String(x ?? '').replace(/"/g,'""') + '"').join(',')).join('\\r\\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); a.download = \`장학금_제출목록_\${(D.now||'').slice(0,10)}.csv\`; a.click();
+}
+window.addEventListener('hashchange', route);
+document.addEventListener('click', e => { const b = e.target.closest('.evbtn'); if (b) viewFile(b.dataset.u, b.dataset.l); });
+
 (async () => {
   if (!CFG_TPL && API){ try { const r = await fetch(API + '?action=config'); CFG = Object.assign({}, CFG, await r.json()); } catch(e) {} }
   init();
   if (PREVIEW){ const n = $('#notice'); n.style.display=''; n.textContent = T('previewBanner'); $('#go').disabled = true; }
+  route();
 })();
 </script>
 </body>
