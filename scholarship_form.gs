@@ -441,7 +441,10 @@ function submit(p, token) {
   if (!/[A-Za-z]/.test(String(p.영문명 || ''))) throw new Error('논문에 쓰는 영문 이름을 입력해 주세요. / Please enter the name used in your papers.');
   if (!/^\d{8}$/.test(String(p.학번).trim())) throw new Error('학번은 숫자 8자리로 입력해 주세요. / Student ID must be 8 digits.');
 
-  const lock = LockService.getScriptLock(); lock.waitLock(30000); mark('lock');
+  // 동시에 여러 명이 내면 한 명씩 차례로 기록 (1건 약 3~4초). 마감 직전 몰림에 대비해 최대 100초까지 기다림
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(100000)) throw new Error('지금 제출이 몰려 있습니다. 1~2분 뒤 다시 제출해 주세요(입력한 내용은 화면에 그대로 있습니다). / Too many submissions right now. Please try again in a minute or two.');
+  mark('lock');
   try {
     const id = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyMMdd-HHmmss') + '-' + String(p.학번).slice(-4);
     const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
@@ -1243,9 +1246,9 @@ function renderMine(){
     <h4 style="margin:12px 0 6px">\${T('s2')} \${s.papers.length}</h4>
     \${s.papers.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>\${T('journal')}</th><th>\${T('accept')}</th><th>\${T('role')}</th><th>\${T('authors')}</th><th></th></tr>\${s.papers.map(p=>\`<tr><td>\${esc(p['순번'])}</td><td><b>\${esc(p['저널명(학생)'])}</b><div class="sub2">\${esc(p['논문제목'])}</div></td><td>\${esc(p['Accept일'])}</td><td>\${esc(p['역할(학생)'])}</td><td>\${esc(p['저자수(학생)'])}</td><td>\${ev(p['증빙1'],'논문'+p['순번'],s)} \${p['증빙2']?ev(p['증빙2'],'논문'+p['순번']+'_추가',s):''}</td></tr>\`).join('')}</table></div>\` : \`<div class="sub2">\${T('none')}</div>\`}
     <h4 style="margin:12px 0 6px">\${T('s3')} \${s.patents.length}</h4>
-    \${s.patents.length ? \`<div class="a-wrap"><table class="a-tbl">\${s.patents.map(p=>\`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['명칭'])}<div class="sub2">\${esc(p['출원·등록번호'])} \${esc(p['일자'])}</div></td><td>\${esc(p['기여도(%)'])}%</td><td>\${ev(p['증빙'],'특허'+p['순번'],s)}</td></tr>\`).join('')}</table></div>\` : \`<div class="sub2">\${T('none')}</div>\`}
+    \${s.patents.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>\${T('ptype')}</th><th>\${T('pname')}</th><th>\${T('share')}</th><th></th></tr>\${s.patents.map(p=>\`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['명칭'])}<div class="sub2">\${esc(p['출원·등록번호'])} \${esc(p['일자'])}</div></td><td>\${esc(p['기여도(%)'])}%</td><td>\${ev(p['증빙'],'특허'+p['순번'],s)}</td></tr>\`).join('')}</table></div>\` : \`<div class="sub2">\${T('none')}</div>\`}
     <h4 style="margin:12px 0 6px">\${T('s4')} \${s.awards.length}</h4>
-    \${s.awards.length ? \`<div class="a-wrap"><table class="a-tbl">\${s.awards.map(p=>\`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['학회·대회명'])}<div class="sub2">\${esc(p['수상명'])} \${esc(p['일자'])}</div></td><td>\${ev(p['증빙'],'수상'+p['순번'],s)}</td></tr>\`).join('')}</table></div>\` : \`<div class="sub2">\${T('none')}</div>\`}
+    \${s.awards.length ? \`<div class="a-wrap"><table class="a-tbl"><tr><th>#</th><th>\${T('ptype')}</th><th>\${T('aevent')}</th><th></th></tr>\${s.awards.map(p=>\`<tr><td>\${esc(p['순번'])}</td><td>\${esc(p['구분'])}</td><td>\${esc(p['학회·대회명'])}<div class="sub2">\${esc(p['수상명'])} \${esc(p['일자'])}</div></td><td>\${ev(p['증빙'],'수상'+p['순번'],s)}</td></tr>\`).join('')}</table></div>\` : \`<div class="sub2">\${T('none')}</div>\`}
     \${latest ? \`<div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn red" type="button" onclick="editMine()">\${T('mineEdit')}</button><span class="sub2">\${T('mineHint')}</span></div>\` : ''}
   </section>\`;
   const latest = subs.find(s => s['상태']==='유효'), olds = subs.filter(s => s !== latest);
