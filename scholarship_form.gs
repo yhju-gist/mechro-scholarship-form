@@ -316,14 +316,14 @@ function submit(p) {
     ss.getSheetByName('학생').appendRow([id, now, '유효', "'" + p.학번, t_(p.성명, 60), t_(p.과정, 20), t_(p.재학학기, 10), t_(p.지도교수, 40),
       t_(p.이메일, 100), who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000)]);
 
-    papers.forEach((x, i) => ss.getSheetByName('논문').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
+    papers.forEach((x, i) => ss.getSheetByName('논문').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
       t_(x.journal, 200), t_(x.title, 400), t_(x.doi, 120), t_(x.accept, 20), t_(x.role, 10), Number(x.authors) || '',
       place(x.file1, '논문' + (i + 1)), place(x.file2, '논문' + (i + 1) + '_추가')]));
 
-    patents.forEach((x, i) => ss.getSheetByName('특허').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
+    patents.forEach((x, i) => ss.getSheetByName('특허').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
       t_(x.type, 10), t_(x.name, 300), t_(x.no, 60), t_(x.date, 20), Number(x.share) || '', place(x.file, '특허' + (i + 1))]));
 
-    awards.forEach((x, i) => ss.getSheetByName('수상').appendRow([id, '유효', "'" + p.학번, p.성명, i + 1,
+    awards.forEach((x, i) => ss.getSheetByName('수상').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
       t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))]));
 
     try { cleanTemp_(); } catch (e) {}
