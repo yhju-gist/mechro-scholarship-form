@@ -390,46 +390,52 @@ function submit(p, token) {
     const now = Utilities.formatDate(new Date(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss');
     const who = email;
 
+    // 네 시트를 한 번씩만 읽음 (속도) — 이후 확인은 모두 이 값으로
+    const NAMES = ['학생', '논문', '특허', '수상'], SH = {}, V = {};
+    NAMES.forEach(n => { SH[n] = ss.getSheetByName(n); V[n] = SH[n].getDataRange().getValues(); });
+    const col = (n, k) => V[n][0].indexOf(k);
+    const sid = String(p.학번);
+
     // 학번과 메일을 1:1로 묶음 — 다른 사람이 남의 학번으로 제출하거나, 한 계정이 여러 학번으로 제출하는 것 막기
-    sheetObjects_('학생').forEach(r => {
-      const re = String(r['이메일'] || '').toLowerCase(), rid = String(r['학번']).replace(/^'/, '');
-      if (rid === String(p.학번) && re && re !== email) throw new Error('이 학번은 다른 GIST 계정으로 이미 제출되었습니다. 담당자에게 문의해 주세요. / This student ID was already submitted from another account. Please contact the office.');
-      if (re === email && rid !== String(p.학번)) throw new Error('이 계정은 이미 다른 학번(' + rid + ')으로 제출했습니다. 담당자에게 문의해 주세요. / This account already submitted under another student ID.');
+    const cE = col('학생', '이메일'), cN = col('학생', '학번'), cR = col('학생', '접수번호');
+    const mine = {};
+    V['학생'].slice(1).forEach(r => {
+      const re = String(r[cE] || '').toLowerCase(), rid = String(r[cN]).replace(/^'/, '');
+      if (!rid) return;
+      if (rid === sid && re && re !== email) throw new Error('이 학번은 다른 GIST 계정으로 이미 제출되었습니다. 담당자에게 문의해 주세요. / This student ID was already submitted from another account. Please contact the office.');
+      if (re === email && rid !== sid) throw new Error('이 계정은 이미 다른 학번(' + rid + ')으로 제출했습니다. 담당자에게 문의해 주세요. / This account already submitted under another student ID.');
+      if (re === email) mine[r[cR]] = 1;
     });
-    const own = ownFileIds_(email);
+    // 이 메일로 예전에 낸 증빙 (다시 올리지 않고 그대로 쓸 수 있음)
+    const own = {};
+    [['논문', ['증빙1', '증빙2']], ['특허', ['증빙']], ['수상', ['증빙']]].forEach(([n, cols]) => {
+      const ci = col(n, '접수번호'), cc = cols.map(k => col(n, k));
+      V[n].slice(1).forEach(r => { if (mine[r[ci]]) cc.forEach(c => { const m = String(r[c] || '').match(/[-\w]{25,}/); if (m) own[m[0]] = r[c]; }); });
+    });
 
     // 먼저 증빙 파일이 모두 이번에 임시로 올린 파일인지 확인 (확인 전에는 아무것도 기록하지 않음)
-    const tmpId0 = tmpFolder_().getId();
-    const fids = [];
+    const tmpId = tmpFolder_().getId();
+    const fids = [], FILES = {};
     (p.papers || []).forEach(x => { if (x.file1) fids.push(x.file1); if (x.file2) fids.push(x.file2); });
     (p.patents || []).forEach(x => { if (x.file) fids.push(x.file); });
     (p.awards || []).forEach(x => { if (x.file) fids.push(x.file); });
     fids.forEach(fid => {
+      fid = String(fid); if (own[fid]) return;   // 이전에 본인이 낸 파일 그대로 쓰기
       let ok = false;
-      if (own[String(fid)]) ok = true;   // 이전에 본인이 낸 파일 그대로 쓰기
-      else try { const par = DriveApp.getFileById(String(fid)).getParents(); ok = par.hasNext() && par.next().getId() === tmpId0; } catch (e) {}
+      try { const f = DriveApp.getFileById(fid), par = f.getParents(); ok = par.hasNext() && par.next().getId() === tmpId; if (ok) FILES[fid] = f; } catch (e) {}
       if (!ok) throw new Error('증빙 파일을 다시 올려 주세요. / Please upload the evidence file again.');
     });
 
-    // 같은 학번 이전 제출은 '대체됨' 처리 (최신 제출만 유효)
-    ['학생', '논문', '특허', '수상'].forEach(name => {
-      const sh = ss.getSheetByName(name); const v = sh.getDataRange().getValues();
-      const ci = v[0].indexOf('학번'), cs = v[0].indexOf('상태');
-      for (let r = 1; r < v.length; r++) if (String(v[r][ci]) === String(p.학번) && v[r][cs] === '유효') sh.getRange(r + 1, cs + 1).setValue('대체됨');
-    });
-
-    // 증빙 파일 → 학번_성명 폴더로 이동·이름 정리
+    // 증빙 파일 → 학번_성명 폴더로 이동·이름 정리 (위에서 확인한 파일만)
     const root = DriveApp.getFolderById(PropertiesService.getScriptProperties().getProperty('FOLDER_ID'));
-    const folder = getOrCreate_(root, p.학번 + '_' + String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40));
-    const tmpId = tmpId0;
+    const safe = String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40);
+    const folder = getOrCreate_(root, sid + '_' + safe);
     const place = (fid, label) => {
       if (!fid) return '';
-      if (own[String(fid)]) return own[String(fid)];   // 기존 본인 파일은 그대로
-      const f = DriveApp.getFileById(fid);
-      const par = f.getParents();
-      if (!par.hasNext() || par.next().getId() !== tmpId) throw new Error('증빙 파일 오류 / Invalid file');
+      fid = String(fid); if (own[fid]) return own[fid];   // 기존 본인 파일은 그대로
+      const f = FILES[fid]; if (!f) throw new Error('증빙 파일 오류 / Invalid file');
       const ext = (f.getName().match(/\.[^.]+$/) || ['.pdf'])[0];
-      f.setName(p.학번 + '_' + String(p.성명).replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) + '_' + label + '_' + id + ext);
+      f.setName(sid + '_' + safe + '_' + label + '_' + id + ext);
       f.moveTo(folder);
       return f.getUrl();
     };
@@ -438,18 +444,27 @@ function submit(p, token) {
     const patents = (p.patents || []).filter(x => x.type);
     const awards = (p.awards || []).filter(x => x.type);
 
-    ss.getSheetByName('학생').appendRow([id, now, '유효', "'" + p.학번, t_(p.성명, 60), t_(p.과정, 20), t_(p.재학학기, 10), t_(p.지도교수, 40),
-      email, who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000), t_(p.영문명, 80)]);
+    // 줄을 모두 만든 뒤 (파일 이동 포함) 시트마다 한 번에 기록
+    const ROWS = {
+      학생: [[id, now, '유효', "'" + sid, t_(p.성명, 60), t_(p.과정, 20), t_(p.재학학기, 10), t_(p.지도교수, 40),
+        email, who, papers.length, patents.length, awards.length, folder.getUrl(), t_(p.메모, 1000), t_(p.영문명, 80)]],
+      논문: papers.map((x, i) => [id, '유효', "'" + sid, t_(p.성명, 60), i + 1,
+        t_(x.journal, 200), t_(x.title, 400), t_(x.doi, 120), t_(x.accept, 20), t_(x.role, 10), Number(x.authors) || '',
+        place(x.file1, '논문' + (i + 1)), place(x.file2, '논문' + (i + 1) + '_추가')]),
+      특허: patents.map((x, i) => [id, '유효', "'" + sid, t_(p.성명, 60), i + 1,
+        t_(x.type, 10), t_(x.name, 300), t_(x.no, 60), t_(x.date, 20), Number(x.share) || '', place(x.file, '특허' + (i + 1))]),
+      수상: awards.map((x, i) => [id, '유효', "'" + sid, t_(p.성명, 60), i + 1,
+        t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))])
+    };
 
-    papers.forEach((x, i) => ss.getSheetByName('논문').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
-      t_(x.journal, 200), t_(x.title, 400), t_(x.doi, 120), t_(x.accept, 20), t_(x.role, 10), Number(x.authors) || '',
-      place(x.file1, '논문' + (i + 1)), place(x.file2, '논문' + (i + 1) + '_추가')]));
-
-    patents.forEach((x, i) => ss.getSheetByName('특허').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
-      t_(x.type, 10), t_(x.name, 300), t_(x.no, 60), t_(x.date, 20), Number(x.share) || '', place(x.file, '특허' + (i + 1))]));
-
-    awards.forEach((x, i) => ss.getSheetByName('수상').appendRow([id, '유효', "'" + p.학번, t_(p.성명, 60), i + 1,
-      t_(x.type, 10), t_(x.event, 200), t_(x.prize, 200), t_(x.date, 20), place(x.file, '수상' + (i + 1))]));
+    // 같은 학번 이전 제출은 '대체됨' 처리 (최신 제출만 유효) → 새 줄 기록
+    NAMES.forEach(n => {
+      const ci = col(n, '학번'), cs = col(n, '상태'), a1 = [];
+      for (let r = 1; r < V[n].length; r++) if (String(V[n][r][ci]).replace(/^'/, '') === sid && V[n][r][cs] === '유효') a1.push(SH[n].getRange(r + 1, cs + 1).getA1Notation());
+      if (a1.length) SH[n].getRangeList(a1).setValue('대체됨');
+      const rows = ROWS[n];
+      if (rows.length) SH[n].getRange(SH[n].getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+    });
 
     try { const cc = CacheService.getScriptCache(); if (!cc.get('cleaned')) { cc.put('cleaned', '1', 3600); cleanTemp_(); } } catch (e) {}   // 1시간에 한 번만
     return { id: id, papers: papers.length, patents: patents.length, awards: awards.length, time: now };
