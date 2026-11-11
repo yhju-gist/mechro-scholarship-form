@@ -581,6 +581,7 @@ const INDEX_HTML = `<!DOCTYPE html>
 /* PC 화면에서는 글자·버튼을 전체적으로 키워 읽기 쉽게 (휴대폰은 그대로) */
 @media (min-width:900px){html{zoom:1.12}}
 @media (min-width:1500px){html{zoom:1.2}}
+@media (min-width:2200px){html{zoom:1.4}}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased;word-break:keep-all;overflow-wrap:anywhere}
 .hero{padding-top:58px!important;background:linear-gradient(135deg,#1B1F23 0%,#2B3330 60%,#4F5B54 100%);color:#fff;padding:44px 16px 72px;position:relative;overflow:hidden}
 .hero:after{content:"";position:absolute;right:-80px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(220,39,21,.55),rgba(220,39,21,0) 70%)}
