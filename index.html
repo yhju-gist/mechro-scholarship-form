@@ -259,6 +259,7 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
         <div class="a-tools">
           <button class="btn" type="button" onclick="loadAdmin()">↻ 새로고침</button>
           <button class="btn" type="button" onclick="adminCsv()">⬇ 목록 CSV</button>
+          <button class="btn red" type="button" id="aRaw" onclick="adminRaw()" title="지금까지 들어온 유효 제출로 RAWDATA 엑셀을 바로 만듭니다">⬇ RAWDATA 엑셀(실시간)</button>
           <a class="btn" id="aSheet" target="_blank" rel="noopener">구글 시트</a>
           <button class="btn" type="button" onclick="adminLogout()">나가기</button>
         </div>
@@ -298,9 +299,9 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
         </div><div class="err" data-t="roleErr"></div></div>
       <div class="f" data-k="authors"><label><span data-t="authors"></span><span class="req">*</span></label><input name="authors" type="number" min="1" inputmode="numeric" data-ph="authorsPh"><div class="err" data-t="authorsErr"></div></div>
       <div class="f full" data-k="file1"><label><span data-t="file1"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file1" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="file1Ph"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file1" accept="application/pdf,.pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="file1Ph"></span></label><div class="err" data-t="fileErr"></div></div>
       <div class="f full"><label><span data-t="file2"></span><span class="opt" data-t="file2Opt"></span></label>
-        <label class="file"><input type="file" name="file2" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">＋</span><span class="t" data-t="choose"></span></label></div>
+        <label class="file"><input type="file" name="file2" accept="application/pdf,.pdf,image/*"><span class="ico">＋</span><span class="t" data-t="choose"></span></label></div>
     </div>
   </div>
 </template>
@@ -321,7 +322,7 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
       <div class="f"><label data-t="pdate"></label><input name="date" type="date"></div>
       <div class="f" data-k="share"><label><span data-t="share"></span><span class="req">*</span></label><input name="share" type="number" min="1" max="100" inputmode="numeric" data-ph="sharePh"><div class="err" data-t="shareErr"></div></div>
       <div class="f" data-k="file"><label><span data-t="pfile"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file" accept="application/pdf,.pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
     </div>
   </div>
 </template>
@@ -339,7 +340,7 @@ input[readonly]{background:#F5F6F4;color:var(--gray)}
       <div class="f"><label data-t="aprize"></label><input name="prize" data-ph="aprizePh"></div>
       <div class="f"><label data-t="adate"></label><input name="date" type="date"></div>
       <div class="f" data-k="file"><label><span data-t="afile"></span><span class="req">*</span></label>
-        <label class="file"><input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
+        <label class="file"><input type="file" name="file" accept="application/pdf,.pdf,image/*"><span class="ico">PDF</span><span class="t" data-t="choose"></span></label><div class="err" data-t="fileErr"></div></div>
     </div>
   </div>
 </template>
@@ -365,12 +366,12 @@ const I18N = {
   cntP:'논문',cntT:'특허',cntA:'수상',submit:'제출하기',paper:'논문',patent:'특허',award:'수상',del:'삭제',
   journal:'저널명 (전체 이름)',journalPh:'예) Advanced Functional Materials',journalHint:'약어 대신 전체 이름으로 적어 주세요.',journalErr:'저널명을 입력해 주세요.',ptitle:'논문 제목',ptitlePh:'논문 제목',ifAny:'(있으면)',
   accept:'게재날짜(or Accept날짜)',acceptOpt:'(일자가 불명확한 경우 1일로)',acceptErr:'게재날짜(또는 Accept날짜)를 입력해 주세요.',acceptFuture:'오늘 이후 날짜는 넣을 수 없습니다.',doiErr:'DOI 형식이 아닙니다. 예) 10.1016/j.ijmecsci.2026.110123',authorsMin2:'공동 제1저자·그 외 공저자는 저자가 2명 이상이어야 합니다.',dupPaper:'같은 논문을 두 번 넣었습니다.',journalAbbr:'약어 말고 저널 전체 이름으로 써 주세요. 예) Int. J. Mech. Sci. → International Journal of Mechanical Sciences',chkTitle:'제출 전에 한 번 더 확인해 주세요',chkOut:'논문 {i}: 게재(Accept) 날짜({d})가 실적인정 기간({r}) 밖입니다.',chkGo:'이대로 제출',chkFix:'고치러 가기',upPar:'증빙 올리는 중 ({i}/{n})',shrink:'사진 크기 줄이는 중…',role:'나의 역할',rFA:'제1저자',rCoFA:'공동 제1저자',rCA:'교신저자',rETC:'그 외 공저자',roleErr:'역할을 골라 주세요.',
-  authors:'총 저자 수 (본인 포함)',authorsPh:'예) 5',authorsErr:'저자 수를 입력해 주세요.',file1:'증빙 ① 논문PDF파일 또는 첫페이지 PDF',file1Ph:'논문 PDF 또는 저자·소속이 보이는 첫 페이지 PDF',fileErr:'증빙 파일을 올려 주세요.',
-  file2:'증빙 ② Accept 메일 등',file2Opt:'(게재 전이면)',choose:'파일 선택',
+  authors:'총 저자 수 (본인 포함)',authorsPh:'예) 5',authorsErr:'저자 수를 입력해 주세요.',file1:'증빙 ① 논문PDF파일 또는 첫페이지 PDF·사진',file1Ph:'논문 PDF, 또는 저자·소속이 보이는 첫 페이지(PDF·사진)',fileErr:'증빙 파일을 올려 주세요.',
+  file2:'증빙 ② Accept 메일 등',file2Opt:'(게재 전이면)',choose:'파일 선택 (PDF 또는 사진)',
   ptype:'구분',kApp:'국내 출원',kReg:'국내 등록',iApp:'국제 출원',iReg:'국제 등록',typeErr:'구분을 골라 주세요.',pname:'발명의 명칭',pno:'출원·등록번호',pdate:'출원·등록일',share:'나의 기여도(%)',sharePh:'예) 30',shareErr:'1~100 사이로 입력해 주세요.',pfile:'증빙 (출원서·등록증, 기여도 표시)',
-  aDom:'국내 학회·대회',aInt:'해외(국제) 학회·대회',aevent:'학회·대회명',aprize:'수상명',aprizePh:'예) Best Paper Award',adate:'수상일',afile:'증빙 (상장 등)',
+  aDom:'국내 학회·대회',aInt:'해외(국제) 학회·대회',aevent:'학회·대회명',aprize:'수상명',aprizePh:'예) Best Paper Award',adate:'수상일',afile:'증빙 (상장 PDF 또는 사진)',
   contact:'문의',closed:'접수가 마감되었습니다',emptyP:'논문 실적이 없으면 비워 두세요.',emptyT:'특허 실적이 없으면 비워 두세요.',emptyA:'수상 실적이 없으면 비워 두세요.',
-  selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',badType:'PDF·JPG·PNG 파일만 올릴 수 있습니다.',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
+  selProf:'선택해 주세요',etcProf:'목록에 없음 (직접 입력)',badType:'PDF 또는 사진(JPG·PNG 등) 파일만 올릴 수 있습니다.',badPhoto:'이 사진 형식은 이 브라우저에서 열리지 않습니다. JPG로 저장(또는 화면 캡처)해서 올려 주세요.',tooBig:'파일이 {mb}MB를 넘습니다. 첫 페이지만 따로 저장해 올려 주세요.',needOne:'논문·특허·수상 중 하나 이상 입력해 주세요.',
   sending:'제출하는 중',uploading:'증빙 파일을 올리고 있습니다…',upN:'증빙 파일 {i} / {n} 올리는 중',saving:'접수 기록 중…',noClose:'창을 닫지 마세요.',
   done:'제출되었습니다',rcpt:'접수번호',doneCnt:'논문 {p}편 · 특허 {t}건 · 수상 {a}건',doneNote:'{time} 접수 · 고칠 것이 있으면 같은 학번으로 다시 제출하세요(마지막 제출만 반영).',fail:'제출하지 못했습니다',back:'돌아가기',previewBanner:'미리보기 화면입니다 — 담당자가 접수를 열면 제출할 수 있습니다.',previewErr:'아직 접수가 열리지 않았습니다.',
   gateT:'GIST 메일로 본인 확인',gateD:'제출과 조회는 본인만 할 수 있도록, 학교 메일로 받은 인증번호를 입력해 주세요.',gEmail:'GIST 메일 주소',gSend:'인증번호 받기',gCode:'메일로 받은 6자리 인증번호',gVerify:'확인',
@@ -388,12 +389,12 @@ const I18N = {
   cntP:'Papers',cntT:'Patents',cntA:'Awards',submit:'Submit',paper:'Paper',patent:'Patent',award:'Award',del:'Remove',
   journal:'Journal (full title)',journalPh:'e.g. Advanced Functional Materials',journalHint:'Use the full journal title, not the abbreviation.',journalErr:'Enter the journal title.',ptitle:'Paper title',ptitlePh:'Paper title',ifAny:'(if any)',
   accept:'Publication date (or acceptance date)',acceptOpt:'(if the day is unknown, use the 1st)',acceptErr:'Enter the publication (or acceptance) date.',acceptFuture:'The date cannot be in the future.',doiErr:'This is not a DOI. e.g. 10.1016/j.ijmecsci.2026.110123',authorsMin2:'A co-first author or other co-author means at least 2 authors.',dupPaper:'The same paper is entered twice.',journalAbbr:'Please write the full journal title, not the abbreviation. e.g. Int. J. Mech. Sci. → International Journal of Mechanical Sciences',chkTitle:'Please check before submitting',chkOut:'Paper {i}: the publication (acceptance) date ({d}) is outside the eligible period ({r}).',chkGo:'Submit anyway',chkFix:'Go back and fix',upPar:'Uploading evidence ({i}/{n})',shrink:'Reducing photo size…',role:'Your role',rFA:'First author',rCoFA:'Co-first author',rCA:'Corresponding',rETC:'Other co-author',roleErr:'Choose your role.',
-  authors:'Total number of authors (incl. you)',authorsPh:'e.g. 5',authorsErr:'Enter the number of authors.',file1:'Evidence ① Paper PDF file or first-page PDF',file1Ph:'Paper PDF, or the first page showing authors',fileErr:'Upload the evidence file.',
-  file2:'Evidence ② Acceptance email etc.',file2Opt:'(if not yet published)',choose:'Choose file',
+  authors:'Total number of authors (incl. you)',authorsPh:'e.g. 5',authorsErr:'Enter the number of authors.',file1:'Evidence ① Paper PDF file or first page (PDF/photo)',file1Ph:'Paper PDF, or the first page showing authors (PDF or photo)',fileErr:'Upload the evidence file.',
+  file2:'Evidence ② Acceptance email etc.',file2Opt:'(if not yet published)',choose:'Choose file (PDF or photo)',
   ptype:'Type',kApp:'Korean application',kReg:'Korean registration',iApp:'International application',iReg:'International registration',typeErr:'Choose the type.',pname:'Title of invention',pno:'Application / registration no.',pdate:'Filing / registration date',share:'Your share (%)',sharePh:'e.g. 30',shareErr:'Enter a number from 1 to 100.',pfile:'Evidence (application / certificate showing shares)',
-  aDom:'Domestic conference / competition',aInt:'International conference / competition',aevent:'Conference / competition',aprize:'Award title',aprizePh:'e.g. Best Paper Award',adate:'Award date',afile:'Evidence (certificate etc.)',
+  aDom:'Domestic conference / competition',aInt:'International conference / competition',aevent:'Conference / competition',aprize:'Award title',aprizePh:'e.g. Best Paper Award',adate:'Award date',afile:'Evidence (certificate PDF or photo)',
   contact:'Contact',closed:'Submissions are closed',emptyP:'Leave empty if you have no papers.',emptyT:'Leave empty if you have no patents.',emptyA:'Leave empty if you have no awards.',
-  selProf:'Select',etcProf:'Not in the list (type it)',badType:'Only PDF, JPG or PNG files can be uploaded.',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
+  selProf:'Select',etcProf:'Not in the list (type it)',badType:'Only PDF or photo (JPG, PNG etc.) files can be uploaded.',badPhoto:'This photo format cannot be opened in this browser. Please save it as JPG (or take a screenshot) and upload it.',tooBig:'The file is larger than {mb}MB. Please save and upload only the first page.',needOne:'Enter at least one paper, patent or award.',
   sending:'Submitting',uploading:'Uploading evidence files…',upN:'Uploading file {i} of {n}',saving:'Saving your submission…',noClose:'Please do not close this window.',
   done:'Submitted',rcpt:'Receipt no.',doneCnt:'{p} paper(s) · {t} patent(s) · {a} award(s)',doneNote:'Received {time}. To make changes, submit again with the same student ID (only the latest counts).',fail:'Submission failed',back:'Back',previewBanner:'Preview — submissions open once the office connects the form.',previewErr:'Submissions are not open yet.',
   gateT:'Verify with your GIST email',gateD:'So that only you can submit and view your records, enter the code sent to your school email.',gEmail:'GIST email address',gSend:'Send code',gCode:'6-digit code from the email',gVerify:'Verify',
@@ -457,10 +458,11 @@ function mount(tplId, boxId){
     const nm = 'r' + (++uid);
     seg.querySelectorAll('input').forEach((inp,i) => { const id = nm+'_'+i; inp.name = nm; inp.id = id; inp.nextElementSibling.htmlFor = id; });
   });
-  node.querySelectorAll('.file input').forEach(inp => inp.onchange = () => {
-    const f = inp.files[0], box = inp.parentElement;
-    if (f && f.size > CFG.maxMb*1024*1024){ alert(T('tooBig',{mb:CFG.maxMb})); inp.value=''; }
-    else if (f && !/\.(pdf|jpe?g|png)$/i.test(f.name)){ alert(T('badType')); inp.value=''; }
+  node.querySelectorAll('.file input').forEach(inp => inp.onchange = async () => {
+    const f = inp.files[0], box = inp.parentElement, img = f && isImg(f);
+    if (f && !img && !/\.pdf$/i.test(f.name) && f.type !== 'application/pdf'){ alert(T('badType')); inp.value=''; }
+    else if (f && f.size > (img ? 40 : CFG.maxMb)*1024*1024){ alert(T('tooBig',{mb:img ? 40 : CFG.maxMb})); inp.value=''; }
+    else if (img && !/^image\/(jpeg|png)$/.test(f.type) && !(await canDecode(f))){ alert(T('badPhoto')); inp.value=''; }
     const ok = !!inp.files[0];
     if (ok) { delete box.dataset.keep; box.classList.remove('keep'); }
     box.classList.toggle('has', ok); box.querySelector('.t').textContent = ok ? inp.files[0].name : T('choose'); box.querySelector('.ico').textContent = ok ? '✓' : 'PDF';
@@ -537,15 +539,22 @@ function collect(){
 
 const TODAY = new Date(Date.now() + 9*3600e3).toISOString().slice(0,10);
 /* 휴대폰 사진(JPG·PNG)이 크면 글자가 충분히 보이는 크기(긴 변 2200px)로 줄여 올림 — PDF는 그대로 */
+/* 사진: JPG·PNG 말고 다른 형식(HEIC·WEBP 등)은 JPG로 바꾸고, 큰 사진은 줄여서 올림 */
+function isImg(f){ return /^image\//.test(f.type) || /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/i.test(f.name); }
+async function canDecode(f){ try { const b = await createImageBitmap(f); b.close && b.close(); return true; } catch(e){ return false; } }
 async function shrink(f){
-  if (!/^image\/(jpeg|png)$/.test(f.type) || f.size < 1.5*1024*1024) return f;
+  if (!isImg(f)) return f;
+  const keep = /^image\/(jpeg|png)$/.test(f.type) && /\.(jpe?g|png)$/i.test(f.name);
+  if (keep && f.size < 1.5*1024*1024) return f;
   try {
     const bmp = await createImageBitmap(f); const k = Math.min(1, 2200 / Math.max(bmp.width, bmp.height));
     const c = document.createElement('canvas'); c.width = Math.round(bmp.width*k); c.height = Math.round(bmp.height*k);
     const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
     const b = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.88));
-    return b && b.size < f.size ? new File([b], f.name.replace(/\.\w+$/,'') + '.jpg', {type:'image/jpeg'}) : f;
-  } catch(e){ return f; }
+    const out = b && (!keep || b.size < f.size) ? new File([b], f.name.replace(/\.\w+$/,'') + '.jpg', {type:'image/jpeg'}) : f;
+    if (out.size > CFG.maxMb*1024*1024) throw new Error(T('tooBig',{mb:CFG.maxMb}));
+    return out;
+  } catch(e){ if (keep && f.size <= CFG.maxMb*1024*1024) return f; throw new Error(e && /MB/.test(e.message) ? e.message : T('badPhoto')); }
 }
 /* 실적인정 기간 밖 Accept 날짜 등 — 막지는 않고 한 번 더 확인 */
 function softChecks(P){
@@ -831,6 +840,270 @@ async function renderPdf(bytes){
 }
 function closeViewer(){ const b=$('#vBody'); b.style.display=''; b.style.background=''; b.style.padding=''; $('#viewer').classList.remove('on'); $('#vBody').innerHTML=''; }
 document.addEventListener('keydown', e => { if (e.key==='Escape') closeViewer(); });
+/*RAW-START*/
+/* ── 관리자: RAWDATA 엑셀 실시간 내려받기 (build_rawdata.py · sheet_to_json.py와 같은 규칙) ── */
+const RAW = (() => {
+  const ROLE_CR = {FA:2, CA:2, 'co-FA':1.5, ETC:1}, ROLE_IF = {FA:1, CA:1, 'co-FA':0.8, ETC:0.5};
+  const PATENT = [['국제등록','국제특허 등록',8,1],['국제출원','국제특허 출원',4,2],['국내등록','국내특허 등록',6,3],['국내출원','국내특허 출원',3,3]];
+  const AWARD = [['해외','해외학회 및 경진대회\n(국제 학회, 기준점수:1점)',1.0],['국내','국내학회 및 경진대회\n(국내 학회, 기준점수:0.5점)',0.5]];
+  const s = x => x == null ? '' : String(x).trim();
+  const num = x => { const t = String(x == null ? '' : x).replace(/,/g,'').trim(); if (t === '') return null; const v = Number(t); return isFinite(v) ? v : null; };
+  const asDate = x => { const m = s(x).match(/(\d{4})\D(\d{1,2})\D(\d{1,2})/); return m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : null; };
+  const normRole = x => ({FA:'FA','CO-FA':'co-FA',COFA:'co-FA',CA:'CA',ETC:'ETC'})[s(x).toUpperCase().replace(/[ ]/g,'').replace(/_/g,'-')] || '';
+  const doiKey = (doi, title) => s(doi).toLowerCase().replace(/^https?:\/\/(dx\.)?doi\.org\//,'').trim() || s(title).toLowerCase().replace(/[^a-z0-9가-힣]/g,'');
+  const nameKey = x => { const t = s(x).toLowerCase().replace(/[-‐]/g,'').replace(/[^a-z ]/g,' '); const w = t.split(/\s+/).filter(Boolean);
+    return [...new Set(w.filter(v => v.length > 1 || w.length <= 2))].sort().join(' '); };
+  const authorPos = (name, authors) => { const k = nameKey(name); if (!k) return 0;
+    const lst = s(authors).split(/\s*[,;]\s*|\s+and\s+/).filter(a => a.trim());
+    const hit = lst.map((a,i) => nameKey(a) === k ? i+1 : 0).filter(Boolean); return hit.length === 1 ? hit[0] : (hit.length ? -1 : 0); };
+  const cats = t => s(t).split(';').map(p => p.match(/^\s*(.+?)\s+(\d+)\s*\/\s*(\d+)\s*$/)).filter(Boolean).map(m => [m[1].trim(), +m[2], +m[3]]);
+  const confirmed = r => ['O','○','확인','Y'].includes(s(r['담당자확정']).toUpperCase());
+  const sid_ = x => s(x).replace(/^'+/,'');
+  const fl = F => F.map(([a,b,c]) => ({내용:a, 학생:b, 확인:c}));
+  const pct2 = v => (Math.round(v*100)/100).toFixed(2);
+
+  /* adminList 결과 → build_rawdata 입력 형태 (sheet_to_json.main 과 같은 판단) */
+  function toData(D, cfg){
+    const dFrom = asDate(cfg.from), dTo = asDate(cfg.to);
+    const prevKeys = new Set((D.prev || []).map(p => sid_(p['학번']) + '|' + doiKey(p['DOI'], p['논문제목'])));
+    const valid = r => s(r['상태']) === '유효';
+    const st = {};
+    D.students.filter(valid).forEach(r => { const id = sid_(r['학번']);
+      st[id] = {학번:id, 성명:s(r['성명']), 영문명:s(r['논문영문명']), 과정:s(r['과정']), 재학학기:s(r['재학학기']), 지도교수:s(r['지도교수']), papers:[], patents:[], awards:[], flags:[]}; });
+    const years = new Set(), seen = new Set();
+    const items = k => D.students.flatMap(x => x[k] || []).filter(valid);
+    items('papers').forEach(r => {
+      const id = sid_(r['학번']), S = st[id]; if (!S) return;
+      const F = [], roleSt = normRole(r['역할(학생)']), roleAi = normRole(r['역할(AI)']);
+      const nSt = num(r['저자수(학생)']), nAi = num(r['저자수(AI)']), rank = num(r['순위']), tot = num(r['전체']), iff = num(r['IF(JCR)']);
+      if (!s(r['증빙1'])) F.push(['증빙 파일 없음','','']);
+      if (!roleAi) F.push(['AI가 증빙에서 역할을 확인하지 못함 — 증빙 직접 확인', roleSt, s(r['AI근거'])]);
+      else if (roleSt && roleAi !== roleSt) F.push(['역할 불일치 (학생 입력 ≠ 증빙)', roleSt, `${roleAi} · ${s(r['AI근거'])}`]);
+      if (nAi == null) F.push(['AI가 저자 수를 세지 못함', s(r['저자수(학생)']), '']);
+      else if (nSt && Math.trunc(nAi) !== Math.trunc(nSt)) F.push(['저자 수 불일치 (학생 입력 ≠ 증빙)', Math.trunc(nSt), `${Math.trunc(nAi)}명 · ${s(r['저자목록(AI)']).slice(0,120)}`]);
+      const al = s(r['저자목록(AI)']).split(/\s*[,;]\s*/).filter(a => a.trim());
+      if (al.length && nAi != null && al.length !== Math.trunc(nAi)) F.push(['저자 수(AI)와 저자목록(AI) 이름 수가 다름', Math.trunc(nAi), `목록 ${al.length}명`]);
+      const pos = al.length && S.영문명 ? authorPos(S.영문명, r['저자목록(AI)']) : null;
+      if (pos === 0) F.push(['증빙 저자목록에서 본인 영문 이름을 찾지 못함', S.영문명, s(r['저자목록(AI)']).slice(0,120)]);
+      else if (pos === -1) F.push(['증빙 저자목록에 같은 이름이 둘 이상', S.영문명, '']);
+      else if (pos) {
+        if (roleAi === 'FA' && pos !== 1) F.push(['역할(AI)=FA인데 본인이 첫 번째 저자가 아님', `${pos}번째`, roleAi]);
+        if ((roleAi === 'co-FA' || roleAi === 'ETC') && pos === 1) F.push([`역할(AI)=${roleAi}인데 본인이 첫 번째 저자`, '1번째', roleAi]);
+      }
+      if (tot && rank){
+        const pct = num(r['상위%']);
+        if (pct != null && Math.abs(pct - rank/tot*100) > 0.01) F.push(['상위% 계산이 순위/전체와 다름 (순위/전체로 계산)', pct, (rank/tot*100).toFixed(2)]);
+        const better = cats(r['다른카테고리']).filter(c => c[1]/c[2] < rank/tot - 1e-9);
+        if (better.length){ const b = better.reduce((a,c) => c[1]/c[2] < a[1]/a[2] ? c : a);
+          F.push(['더 높은 순위 카테고리가 있음 — 최상위카테고리 다시 확인', `${s(r['최상위카테고리'])} ${Math.trunc(rank)}/${Math.trunc(tot)}`, `${b[0]} ${b[1]}/${b[2]}`]); }
+        if (iff == null) F.push(['IF(JCR) 비어 있음', '', s(r['JCR정식명'])]);
+      }
+      const js = s(r['JCR상태']);
+      if (!tot || !['일치',''].includes(js)) F.push([`JCR 확인 필요 (${js || '미검색'})`, s(r['저널명(학생)']), s(r['JCR정식명']) || 'JCR에서 찾지 못함']);
+      else if (!js) F.push(['JCR 조회 결과 상태 미기재', '', s(r['JCR정식명'])]);
+      const acc = asDate(r['Accept일']), accAi = asDate(r['Accept일(AI)']);
+      if (acc && accAi && acc !== accAi) F.push(['Accept일 불일치 (학생 입력 ≠ 증빙)', acc, accAi]);
+      [['학생 입력', acc], ['증빙', accAi !== acc ? accAi : null]].forEach(([lb, d]) => {
+        if (d && dFrom && dTo && !(dFrom <= d && d <= dTo)) F.push([`Accept일이 실적인정 기간 밖 (${lb})`, d, `${dFrom}~${dTo}`]); });
+      const k = doiKey(r['DOI'], r['논문제목']);
+      if (k && seen.has(id+'|'+k)) F.push(['같은 논문을 두 번 입력', s(r['DOI']), '']);
+      if (k && prevKeys.has(id+'|'+k)) F.push(['이전 포상에서 이미 인정된 논문 (1회 인정)', s(r['DOI']), '이전인정논문 시트']);
+      seen.add(id+'|'+k);
+      if (s(r['JCR연도'])) years.add(s(r['JCR연도']));
+      S.papers.push({저널명: s(r['JCR정식명']) || s(r['저널명(학생)']), 학생저널명: s(r['저널명(학생)']), 제목: s(r['논문제목']), DOI: s(r['DOI']),
+        게재일: acc || s(r['Accept일']), AI게재일: accAi || '', 역할: roleAi || roleSt, 학생역할: roleSt,
+        저자수: Math.trunc(nAi || nSt || 0) || null, 학생저자수: nSt, AI근거: s(r['AI근거']),
+        순위: rank ? Math.trunc(rank) : null, 전체: tot ? Math.trunc(tot) : null, IF: iff, JCR연도: s(r['JCR연도']),
+        카테고리: s(r['최상위카테고리']), 다른카테고리: s(r['다른카테고리']), 증빙: s(r['증빙1']), flags: confirmed(r) ? [] : fl(F)});
+    });
+    items('patents').forEach(r => { const S = st[sid_(r['학번'])]; if (!S) return;
+      let sh = num(r['기여도(%)']) || 0; sh = sh > 1 ? sh/100 : sh;
+      const F = []; if (!s(r['증빙'])) F.push(['증빙 파일 없음','','']);
+      const ai = s(r['AI확인']), pc = Math.round(sh*100) + '%';
+      if (!ai) F.push(['AI 확인 전 / 증빙 직접 확인', pc, '']); else if (/불일치|확인 필요/.test(ai)) F.push(['증빙과 입력 다름', `${s(r['구분'])} ${pc}`, ai]);
+      S.patents.push({구분: s(r['구분']), 기여도: sh, 명칭: s(r['명칭']) || s(r['출원·등록번호']), flags: confirmed(r) ? [] : fl(F)}); });
+    items('awards').forEach(r => { const S = st[sid_(r['학번'])]; if (!S) return;
+      const F = []; if (!s(r['증빙'])) F.push(['증빙 파일 없음','','']);
+      const ai = s(r['AI확인']);
+      if (!ai) F.push(['AI 확인 전 / 증빙 직접 확인', s(r['구분']), '']); else if (/불일치|확인 필요/.test(ai)) F.push(['증빙과 입력 다름', s(r['구분']), ai]);
+      S.awards.push({구분: s(r['구분']), 명칭: `${s(r['학회·대회명'])} ${s(r['수상명'])}`.trim(), flags: confirmed(r) ? [] : fl(F)}); });
+    if (years.size > 1){ const mx = [...years].sort().pop();
+      Object.values(st).forEach(S => S.papers.forEach(p => { if (p.JCR연도 && p.JCR연도 !== mx) p.flags.push({내용:'JCR 연도가 다른 논문과 다름 (최신판으로 다시 조회)', 학생:p.JCR연도, 확인:mx}); })); }
+    return {평가명: s(cfg.title) || '박사과정 재학생 연구우수장학금', JCR연도: [...years].sort().join(', ') || '[확인 필요]',
+            students: Object.values(st).sort((a,b) => a.성명 < b.성명 ? -1 : a.성명 > b.성명 ? 1 : 0)};
+  }
+
+  const baseScore = p => p == null ? 0 : (p<=5?5:p<=10?4:p<=20?3:p<=30?2.5:p<=40?2:p<=50?1.5:1);
+  const coW = n => !n ? 0 : (n<=3 ? 1 : n<=5 ? 0.8 : 0.5);
+  const paperScore = p => { if (!ROLE_CR[p.역할] || !p.전체) return [0,0]; const w = coW(p.저자수);
+    return [baseScore(p.순위/p.전체*100)*w*ROLE_CR[p.역할]*0.6, (p.IF||0)*ROLE_IF[p.역할]*w*0.4]; };
+  const PTS = Object.fromEntries(PATENT.map(x => [x[0], x[2]]));
+  const total = S => { const paper = S.papers.reduce((a,p) => a + paperScore(p)[0] + paperScore(p)[1], 0);
+    const res = S.patents.reduce((a,x) => a + (PTS[x.구분]||0)*x.기여도, 0) + S.awards.reduce((a,x) => a + (x.구분 === '해외' ? 1 : 0.5), 0);
+    return [res, paper]; };
+  const nFlags = S => S.flags.length + ['papers','patents','awards'].reduce((a,k) => a + S[k].reduce((b,x) => b + x.flags.length, 0), 0);
+
+  /* ExcelJS 로 엑셀 만들기 */
+  function build(data, ExcelJS, stamp){
+    const L = c => { let t = ''; while (c > 0){ const m = (c-1)%26; t = String.fromCharCode(65+m) + t; c = Math.floor((c-1)/26); } return t; };
+    const argb = h => 'FF' + h;
+    const FILL = h => ({type:'pattern', pattern:'solid', fgColor:{argb:argb(h)}});
+    const HEAD = 'DCE6F1', SUB = 'F2F2F2', INPUT = 'FFF9E6', FLAG = 'FDE2E1', OK = 'E8F5E9';
+    const thin = {style:'thin', color:{argb:'FFBFBFBF'}}, BOX = {left:thin,right:thin,top:thin,bottom:thin};
+    const CENTER = {horizontal:'center', vertical:'middle', wrapText:true}, LEFT = {horizontal:'left', vertical:'middle', wrapText:true};
+    const wb = new ExcelJS.Workbook(); wb.calcProperties.fullCalcOnLoad = true; wb.creator = 'scholarship-form';
+    const hdr = (ws, r, c, v, fill = HEAD, to) => {
+      const cell = ws.getCell(r, c); cell.value = v;
+      cell.font = {name:'맑은 고딕', size:9, bold:true, color:{argb:'FF000000'}}; cell.alignment = CENTER;
+      if (to){ for (let rr = r; rr <= to[0]; rr++) for (let cc = c; cc <= to[1]; cc++){ const x = ws.getCell(rr, cc); x.border = BOX; x.fill = FILL(fill); }
+               ws.mergeCells(r, c, to[0], to[1]); }
+      cell.border = BOX; cell.fill = FILL(fill); return cell; };
+    const body = (ws, r, c, v, o = {}) => {
+      const cell = ws.getCell(r, c); cell.value = (v === undefined || v === '' && o.blankNull) ? null : v;
+      cell.font = {name:'맑은 고딕', size:9, bold:!!o.bold, color:{argb:argb(o.color || '000000')}};
+      cell.alignment = o.left ? LEFT : CENTER; cell.border = BOX;
+      if (o.fill) cell.fill = FILL(o.fill); if (o.fmt) cell.numFmt = o.fmt; return cell; };
+    const F = (f, result) => ({formula: f, result});
+    ['심의대상자(실적순)','더블체크','RAWDATA','논문검증내역','배점기준'].forEach(n => wb.addWorksheet(n));   // 시트 순서
+    const S = data.students, ws = wb.getWorksheet('RAWDATA');
+    const nSci = Math.max(4, ...S.map(x => x.papers.length));
+    const slots = PATENT.map(([k, lb, pts, d]) => [k, lb, pts, Math.max(d, ...S.map(x => x.patents.filter(p => p.구분 === k).length))]);
+    ['성명','학번','지도교수','합계점수','연구실적\n(특허+수상)','논문실적'].forEach((t, i) => hdr(ws, 1, i+1, t, i+1 > 3 ? SUB : HEAD, [2, i+1]));
+    const sub = ['저널명','category ranking\n(백분율)','category ranking\n기준점수','FA/CA/co-FA/ETC 구분','공저자 수','impact factor','공동연구배점','category ranking 점수','impact factor 점수'];
+    let col = 7; const sci = [];
+    for (let i = 0; i < nSci; i++){ hdr(ws, 1, col, `SCI ${i+1}`, HEAD, [1, col+8]); sub.forEach((t, j) => hdr(ws, 2, col+j, t, SUB)); sci.push(col); col += 9; }
+    const resCols = [], patCols = {};
+    slots.forEach(([k, lb, pts, n]) => { patCols[k] = [];
+      for (let i = 0; i < n; i++){ hdr(ws, 1, col, `${lb} ${i+1}\n(기준점수:${pts}점)`, HEAD, [1, col+1]);
+        hdr(ws, 2, col, '기여도(%)', SUB); hdr(ws, 2, col+1, `${lb} 점수`, SUB); patCols[k].push(col); resCols.push(col+1); col += 2; } });
+    const awCols = {};
+    AWARD.forEach(([k, lb]) => { hdr(ws, 1, col, lb, HEAD, [1, col+1]); hdr(ws, 2, col, '수상건수', SUB); hdr(ws, 2, col+1, '수상실적 점수', SUB); awCols[k] = col; resCols.push(col+1); col += 2; });
+    const lastCol = col - 1, rowOf = {};
+    S.forEach((st, i) => {
+      const r = 3 + i; rowOf[st.학번] = r; const [res, pap] = total(st);
+      body(ws, r, 1, st.성명, {left:true}); body(ws, r, 2, /^\d+$/.test(st.학번) ? Number(st.학번) : st.학번); body(ws, r, 3, st.지도교수 || null);
+      body(ws, r, 4, F(`E${r}+F${r}`, res + pap), {fmt:'0.000', bold:true});
+      body(ws, r, 5, F(resCols.map(c => `${L(c)}${r}`).join('+'), res), {fmt:'0.000'});
+      body(ws, r, 6, F(sci.map(c => `${L(c+7)}${r}+${L(c+8)}${r}`).join('+'), pap), {fmt:'0.000'});
+      sci.forEach((c, k) => {
+        const [H, I, J, K, Lc, M] = [1,2,3,4,5,6].map(d => L(c+d)), p = st.papers[k];
+        const fin = p ? (p.flags.length ? FLAG : INPUT) : null, ps = p ? paperScore(p) : [0,0];
+        const pct = p && p.전체 ? p.순위/p.전체*100 : null, w = p ? coW(p.저자수) : 0;
+        body(ws, r, c, p ? p.저널명 || null : null, {fill:fin, left:true});
+        body(ws, r, c+1, pct != null ? F(`${p.순위}/${p.전체}*100`, pct) : null, {fill:fin, fmt:'0.00'});
+        body(ws, r, c+2, F(`IF(${H}${r}="",0,IF(${H}${r}<=5,5,IF(${H}${r}<=10,4,IF(${H}${r}<=20,3,IF(${H}${r}<=30,2.5,IF(${H}${r}<=40,2,IF(${H}${r}<=50,1.5,1)))))))`, pct == null ? 0 : baseScore(pct)));
+        body(ws, r, c+3, p ? p.역할 || null : null, {fill:fin});
+        body(ws, r, c+4, p ? p.저자수 : null, {fill:fin});
+        body(ws, r, c+5, p ? p.IF : null, {fill:fin, fmt:'0.0'});
+        body(ws, r, c+6, F(`IF(${K}${r}="",0,IF(${K}${r}>=6,0.5,IF(${K}${r}<=3,1,0.8)))`, w));
+        body(ws, r, c+7, F(`${I}${r}*${M}${r}*IF(OR(${J}${r}="FA",${J}${r}="CA"),2,IF(${J}${r}="co-FA",1.5,IF(${J}${r}="ETC",1,0)))*0.6`, ps[0]), {fmt:'0.000'});
+        body(ws, r, c+8, F(`N(${Lc}${r})*IF(OR(${J}${r}="FA",${J}${r}="CA"),1,IF(${J}${r}="co-FA",0.8,IF(${J}${r}="ETC",0.5,0)))*${M}${r}*0.4`, ps[1]), {fmt:'0.000'});
+        ws.getCell(r, c+3).dataValidation = {type:'list', allowBlank:true, formulae:['"FA,CA,co-FA,ETC"']};
+      });
+      slots.forEach(([k, lb, pts]) => { const its = st.patents.filter(x => x.구분 === k);
+        patCols[k].forEach((c, j) => { const x = its[j];
+          body(ws, r, c, x ? x.기여도 : null, {fill: x ? (x.flags.length ? FLAG : INPUT) : null, fmt:'0%'});
+          body(ws, r, c+1, F(`N(${L(c)}${r})*${pts}`, x ? x.기여도*pts : 0), {fmt:'0.00'}); }); });
+      AWARD.forEach(([k, lb, pts]) => { const c = awCols[k], n = st.awards.filter(a => a.구분 === k).length;
+        body(ws, r, c, n || null, {fill: n ? INPUT : null}); body(ws, r, c+1, F(`N(${L(c)}${r})*${pts}`, n*pts), {fmt:'0.00'}); });
+    });
+    ws.views = [{state:'frozen', xSplit:3, ySplit:2}];
+    ws.getColumn(1).width = 14; for (let c = 2; c <= lastCol; c++) ws.getColumn(c).width = 11; sci.forEach(c => ws.getColumn(c).width = 30);
+    ws.getRow(1).height = 30; ws.getRow(2).height = 42;
+
+    const w2 = wb.getWorksheet('심의대상자(실적순)');
+    w2.mergeCells('A1:K1'); const t1 = w2.getCell('A1'); t1.value = `■ ${data.평가명} 심의대상자 (실적순)`; t1.font = {name:'맑은 고딕', size:12, bold:true, color:{argb:'FF1F3864'}};
+    w2.getCell('A2').value = `※ 실시간 내려받기(${stamp}) — 아직 담당자·AI 검증 전 값이 섞여 있을 수 있습니다. 합계·순위는 RAWDATA 수식에서 자동 계산(학번 기준). 장학금액·연차초과는 담당자 입력.`;
+    w2.getCell('A2').font = {name:'맑은 고딕', size:9, color:{argb:'FF4F5B54'}};
+    ['번호','성명','학번','과정','재학학기','지도교수','연구실적\n(특허,수상)','논문실적','합계','순위','장학금','비고','연차초과','확인 필요 건수'].forEach((h, i) => hdr(w2, 4, i+1, h));
+    const order = S.map(x => [x, total(x)]).sort((a, b) => (b[1][0]+b[1][1]) - (a[1][0]+a[1][1]));
+    const tots = order.map(o => o[1][0]+o[1][1]);
+    order.forEach(([st, [res, pap]], i) => { const r = 5 + i, rr = rowOf[st.학번], n = nFlags(st);
+      body(w2, r, 1, i+1); body(w2, r, 2, st.성명); body(w2, r, 3, F(`RAWDATA!B${rr}`, /^\d+$/.test(st.학번) ? Number(st.학번) : st.학번));
+      body(w2, r, 4, st.과정 || null); body(w2, r, 5, st.재학학기 || null); body(w2, r, 6, F(`RAWDATA!C${rr}`, st.지도교수));
+      body(w2, r, 7, F(`RAWDATA!E${rr}`, res), {fmt:'0.000'}); body(w2, r, 8, F(`RAWDATA!F${rr}`, pap), {fmt:'0.000'});
+      body(w2, r, 9, F(`SUM(G${r}:H${r})`, res+pap), {fmt:'0.000', bold:true});
+      body(w2, r, 10, F(`RANK(I${r},$I$5:$I$${4+order.length},0)`, 1 + tots.filter(t => t > res+pap + 1e-12).length));
+      body(w2, r, 11, null, {fill:INPUT, fmt:'#,##0'}); body(w2, r, 12, null, {fill:INPUT}); body(w2, r, 13, null, {fill:INPUT});
+      body(w2, r, 14, n || '', {fill: n ? FLAG : null, color: n ? 'DC2715' : '000000', bold: !!n}); });
+    [6,14,11,9,8,10,11,11,10,7,12,14,9,11].forEach((w, i) => w2.getColumn(i+1).width = w);
+    w2.getRow(4).height = 30; w2.views = [{state:'frozen', xSplit:2, ySplit:4}];
+
+    const w3 = wb.getWorksheet('더블체크');
+    w3.mergeCells('A1:I1'); const t3 = w3.getCell('A1'); t3.value = '■ 담당자 더블체크 목록 — AI가 확정하지 못했거나 학생 입력과 다른 항목'; t3.font = {name:'맑은 고딕', size:12, bold:true, color:{argb:'FFDC2715'}};
+    w3.getCell('A2').value = "※ RAWDATA에는 AI 확인값(없으면 학생 입력값)이 들어가 있습니다. 확인 후 RAWDATA 노란·분홍 칸을 직접 고치고 '처리' 칸에 표시하세요."; w3.getCell('A2').font = {name:'맑은 고딕', size:9, color:{argb:'FF4F5B54'}};
+    ['번호','성명','학번','구분','항목','확인할 내용','학생 입력','AI·JCR 확인값','처리(담당자)'].forEach((h, i) => hdr(w3, 4, i+1, h));
+    let r3 = 5, n3 = 0;
+    const put3 = vals => { vals.forEach((v, i) => body(w3, r3, i+1, v === '' || v == null ? null : v, {left: [5,6,7,8].includes(i+1), fill: i+1 === 9 ? INPUT : null})); r3++; };
+    S.forEach(st => {
+      [['논문', st.papers], ['특허', st.patents], ['수상', st.awards]].forEach(([kind, its]) => its.forEach(it => it.flags.forEach(f => {
+        n3++; put3([n3, st.성명, st.학번, kind, it.저널명 || it.명칭, f.내용, f.학생, f.확인, '']);
+        w3.getCell(r3-1, 6).fill = FILL(FLAG); })));
+      st.flags.forEach(f => { n3++; put3([n3, st.성명, st.학번, '학생', '-', f.내용, f.학생, f.확인, '']); });
+    });
+    if (!n3){ w3.getCell('A5').value = '확인할 항목 없음'; w3.getCell('A5').font = {name:'맑은 고딕', size:10, color:{argb:'FF4F5B54'}}; }
+    [6,13,11,7,34,44,22,30,14].forEach((w, i) => w3.getColumn(i+1).width = w); w3.views = [{state:'frozen', ySplit:4}];
+
+    const w4 = wb.getWorksheet('논문검증내역');
+    ['성명','학번','저널명(학생 입력)','논문 제목','DOI','Accept일(학생)','Accept일(증빙)','역할(학생)','역할(AI 확인)','저자수(학생)','저자수(AI 확인)','AI 판단 근거',
+     'JCR 정식명','JCR 연도','최상위 카테고리','순위/전체','상위%','IF(JCR)','다른 카테고리','논문점수(계산)','증빙 파일','상태'].forEach((h, i) => hdr(w4, 1, i+1, h));
+    let r4 = 2;
+    S.forEach(st => st.papers.forEach(p => { const [cr, iff] = paperScore(p);
+      const v = [st.성명, st.학번, p.학생저널명 || p.저널명, p.제목, p.DOI, p.게재일, p.AI게재일, p.학생역할, p.역할, p.학생저자수, p.저자수, p.AI근거,
+        p.저널명, p.JCR연도, p.카테고리, p.전체 ? `${p.순위}/${p.전체}` : null, p.전체 ? Math.round(p.순위/p.전체*10000)/100 : null,
+        p.IF, p.다른카테고리, Math.round((cr+iff)*10000)/10000, p.증빙, p.flags.length ? '확인 필요' : '일치'];
+      v.forEach((x, i) => body(w4, r4, i+1, x === '' ? null : x, {left: [3,4,12,13,15,19,21].includes(i+1), fill: i+1 === 22 ? (p.flags.length ? FLAG : OK) : null}));
+      r4++; }));
+    [12,11,28,34,22,11,11,9,9,8,8,36,28,8,26,10,8,8,30,10,26,9].forEach((w, i) => w4.getColumn(i+1).width = w); w4.views = [{state:'frozen', xSplit:2, ySplit:1}];
+
+    const w5 = wb.getWorksheet('배점기준');
+    ['■ 기계로봇공학과 우수연구상 포상자 배점기준 (붙임2) — 이 파일의 수식에 적용된 규칙',
+     'SCI 논문점수 = Category ranking 점수 × 0.6 + Impact factor 점수 × 0.4',
+     'Category ranking 점수 = 역할계수(FA·CA 2.0 / co-FA 1.5 / ETC 1.0) × 기준점수 × 공동연구배점',
+     'Impact factor 점수 = 역할계수(FA·CA 1.0 / co-FA 0.8 / ETC 0.5) × IF × 공동연구배점',
+     '기준점수(카테고리 상위%): 5% 이내 5 / 10% 4.0 / 20% 3.0 / 30% 2.5 / 40% 2.0 / 50% 1.5 / 그 외 1.0',
+     '공동연구배점(총 저자수): 3인 이내 100% / 5인 이내 80% / 6인 이상 50%',
+     "상위% = JCR 'Rank by Journal Impact Factor' 순위 ÷ 카테고리 저널 수 × 100, 여러 카테고리면 가장 높은(%가 낮은) 것",
+     `JCR 연도: 평가 시점 최신 JCR (${data.JCR연도})`,
+     '특허 = 기준점수 × 기여도 (국내출원 3 / 국내등록 6 / 국제출원 4 / 국제등록 8)',
+     '수상 = 국내학회·경진대회 0.5 / 해외학회·경진대회 1.0 (건당)',
+     '논문은 Accept 기준 인정, 동일 포상에 대하여 1회 인정',
+     '※ CA(교신저자)를 FA와 같게 보는 것은 붙임2에 없는 운영 결정(2026-11) — 기준 개정 시 반영 필요',
+     `※ 이 파일은 관리자 화면에서 ${stamp}에 실시간으로 내려받은 것입니다. JCR·역할 검증 전 칸은 학생 입력값이거나 비어 있어 점수가 낮게 나올 수 있습니다.`
+    ].forEach((t, i) => { const c = w5.getCell(i+1, 1); c.value = t; c.font = {name:'맑은 고딕', size:10, bold: i === 0, color:{argb: i === 0 ? 'FF1F3864' : (i === 12 ? 'FFDC2715' : 'FF000000')}}; });
+    w5.getColumn(1).width = 110;
+    wb.views = [{activeTab: 0}];
+    return {wb, flags: n3, students: S.length, papers: S.reduce((a, x) => a + x.papers.length, 0)};
+  }
+  return {toData, build, paperScore, total};
+})();
+/*RAW-END*/
+
+const XLSX_LIB = ['https://yhju-gist.github.io/mechro-scholarship-form/exceljs.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'];
+function loadLib_(){
+  if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+  return XLSX_LIB.reduce((pr, u) => pr.catch(() => new Promise((ok, no) => {
+    const t = document.createElement('script'); t.src = u; t.onload = () => window.ExcelJS ? ok(window.ExcelJS) : no(); t.onerror = () => { t.remove(); no(); }; document.head.appendChild(t);
+  })), Promise.reject()).catch(() => { throw new Error('엑셀 도구를 불러오지 못했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요.'); });
+}
+async function adminRaw(){
+  const btn = $('#aRaw'), old = btn.textContent; btn.disabled = true; btn.textContent = '만드는 중…';
+  try {
+    const [lib, D] = await Promise.all([loadLib_(), gs('adminList', ADM.key)]);   // 누를 때마다 시트에서 새로 읽음
+    ADM.data = D; renderAdmin();
+    const stamp = D.now || new Date().toISOString().slice(0,16).replace('T',' ');
+    const data = RAW.toData(D, {title: CFG.title, from: CFG.from, to: CFG.to});
+    if (!data.students.length){ alert('아직 유효한 제출이 없습니다.'); return; }
+    const r = RAW.build(data, lib, stamp);
+    const buf = await r.wb.xlsx.writeBuffer();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download = `RAWDATA_실시간_${stamp.replace(/[-: ]/g,'').slice(0,12)}.xlsx`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    btn.textContent = `✓ 학생 ${r.students}명·논문 ${r.papers}편 (확인 필요 ${r.flags}건)`;
+    setTimeout(() => { btn.textContent = old; }, 6000);
+  } catch(e){ alert((e && e.message) || e); btn.textContent = old; }
+  finally { btn.disabled = false; }
+}
 function adminCsv(){
   const D = ADM.data; if (!D) return;
   const rows = [['상태','접수번호','접수시각','학번','성명','과정','재학학기','지도교수','구분','순번','내용','세부','날짜','역할/구분','저자수/기여도','증빙']];
