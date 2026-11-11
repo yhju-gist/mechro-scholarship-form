@@ -45,7 +45,16 @@ const DEFAULT_SETTINGS = [
 ];
 
 /* ---------------- 초기 설정 ---------------- */
+/* 담당자 전용 함수 보호: 웹앱 화면(…/exec)에서 google.script.run 으로 불러도 실행되지 않게 함.
+   담당자가 Apps Script 편집기·시트 메뉴에서 직접 실행할 때만 통과 (실행 계정 = 소유자 계정) */
+function ownerOnly_() {
+  let me = '', who = '';
+  try { me = Session.getEffectiveUser().getEmail(); who = Session.getActiveUser().getEmail(); } catch (e) {}
+  if (!me || who !== me) throw new Error('담당자 계정에서 Apps Script 편집기로만 실행할 수 있습니다.');
+}
+
 function setup() {
+  ownerOnly_();
   const props = PropertiesService.getScriptProperties();
   let ss = SpreadsheetApp.getActiveSpreadsheet();   // 시트에서 [확장 프로그램 → Apps Script]로 만든 경우
   if (ss) {
@@ -85,11 +94,11 @@ function setup() {
 
 /* 관리자 비밀번호 새로 만들기 — 실행하면 실행 로그에 새 비밀번호가 나옵니다(이전 비밀번호는 무효) */
 function makeAdminKey() {
+  ownerOnly_();
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   let k = ''; for (let i = 0; i < 10; i++) k += chars[Math.floor(Math.random() * chars.length)];
   PropertiesService.getScriptProperties().setProperty('ADMIN_KEY', k);
-  Logger.log('관리자 비밀번호: ' + k);
-  return k;
+  Logger.log('관리자 비밀번호: ' + k);   // 비밀번호는 실행 로그에만 남기고 돌려주지 않음
 }
 
 function onOpen() {
@@ -100,6 +109,7 @@ function onOpen() {
 }
 
 function showUrl() {
+  ownerOnly_();
   SpreadsheetApp.getUi().alert('학생 입력 웹페이지 주소\n\n' + (ScriptApp.getService().getUrl() || '아직 배포 전입니다. 배포 → 새 배포 → 웹 앱'));
 }
 
@@ -548,6 +558,7 @@ function submit(p, token) {
 
 /* ---------------- 담당자 점검 (시트 메뉴) ---------------- */
 function checkDuplicates() {
+  ownerOnly_();
   const ss = ss_();
   const v = ss.getSheetByName('논문').getDataRange().getValues();
   const h = v[0], cS = h.indexOf('상태'), cN = h.indexOf('학번'), cJ = h.indexOf('저널명(학생)'),
