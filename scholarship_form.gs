@@ -206,14 +206,13 @@ function publicCfg_(e) {
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 /* 깃허브 홈페이지(index.html)가 설정을 읽어 갈 때: …/exec?action=config
-   주소만 열면: 이 웹앱 자체 화면(예비용) */
+   주소만 열면: 안내 글자만 보여 줌.
+   ※ 보안: 이 주소에서 HTML 화면을 띄우면 그 화면의 개발자 도구에서 google.script.run 으로
+     서버 함수를 직접 부를 수 있으므로, HTML 화면(예비용)은 쓰지 않는다 (2026-11-11). */
+const HOME_URL = 'https://yhju-gist.github.io/mechro-scholarship-form/';
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'config') return json_(publicCfg_(e));
-  const t = HtmlService.createTemplate(INDEX_HTML);
-  t.cfg = JSON.stringify(publicCfg_(e));
-  return t.evaluate().setTitle('장학금 연구실적 제출 · Scholarship Submission | GIST')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.DEFAULT);
+  return ContentService.createTextOutput('장학금 연구실적 제출은 아래 홈페이지에서 해 주세요.\nPlease submit at:\n\n' + HOME_URL);
 }
 
 /* 깃허브 홈페이지에서 보내는 업로드·제출 */
