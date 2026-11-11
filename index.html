@@ -860,7 +860,7 @@ const RAW = (() => {
   const confirmed = r => ['O','○','확인','Y'].includes(s(r['담당자확정']).toUpperCase());
   const sid_ = x => s(x).replace(/^'+/,'');
   const fl = F => F.map(([a,b,c]) => ({내용:a, 학생:b, 확인:c}));
-  const pct2 = v => (Math.round(v*100)/100).toFixed(2);
+  const r2 = v => Math.round((v + Number.EPSILON) * 100) / 100;   // 소수 둘째자리 반올림 (엑셀 ROUND와 같게)
 
   /* adminList 결과 → build_rawdata 입력 형태 (sheet_to_json.main 과 같은 판단) */
   function toData(D, cfg){
@@ -980,11 +980,11 @@ const RAW = (() => {
     AWARD.forEach(([k, lb]) => { hdr(ws, 1, col, lb, HEAD, [1, col+1]); hdr(ws, 2, col, '수상건수', SUB); hdr(ws, 2, col+1, '수상실적 점수', SUB); awCols[k] = col; resCols.push(col+1); col += 2; });
     const lastCol = col - 1, rowOf = {};
     S.forEach((st, i) => {
-      const r = 3 + i; rowOf[st.학번] = r; const [res, pap] = total(st);
+      const r = 3 + i; rowOf[st.학번] = r; const [res, pap] = total(st).map(r2);
       body(ws, r, 1, st.성명, {left:true}); body(ws, r, 2, /^\d+$/.test(st.학번) ? Number(st.학번) : st.학번); body(ws, r, 3, st.지도교수 || null);
-      body(ws, r, 4, F(`E${r}+F${r}`, res + pap), {fmt:'0.000', bold:true});
-      body(ws, r, 5, F(resCols.map(c => `${L(c)}${r}`).join('+'), res), {fmt:'0.000'});
-      body(ws, r, 6, F(sci.map(c => `${L(c+7)}${r}+${L(c+8)}${r}`).join('+'), pap), {fmt:'0.000'});
+      body(ws, r, 4, F(`ROUND(E${r}+F${r},2)`, r2(res + pap)), {fmt:'0.00', bold:true});
+      body(ws, r, 5, F(`ROUND(${resCols.map(c => `${L(c)}${r}`).join('+')},2)`, res), {fmt:'0.00'});
+      body(ws, r, 6, F(`ROUND(${sci.map(c => `${L(c+7)}${r}+${L(c+8)}${r}`).join('+')},2)`, pap), {fmt:'0.00'});
       sci.forEach((c, k) => {
         const [H, I, J, K, Lc, M] = [1,2,3,4,5,6].map(d => L(c+d)), p = st.papers[k];
         const fin = p ? (p.flags.length ? FLAG : INPUT) : null, ps = p ? paperScore(p) : [0,0];
@@ -996,8 +996,8 @@ const RAW = (() => {
         body(ws, r, c+4, p ? p.저자수 : null, {fill:fin});
         body(ws, r, c+5, p ? p.IF : null, {fill:fin, fmt:'0.0'});
         body(ws, r, c+6, F(`IF(${K}${r}="",0,IF(${K}${r}>=6,0.5,IF(${K}${r}<=3,1,0.8)))`, w));
-        body(ws, r, c+7, F(`${I}${r}*${M}${r}*IF(OR(${J}${r}="FA",${J}${r}="CA"),2,IF(${J}${r}="co-FA",1.5,IF(${J}${r}="ETC",1,0)))*0.6`, ps[0]), {fmt:'0.000'});
-        body(ws, r, c+8, F(`N(${Lc}${r})*IF(OR(${J}${r}="FA",${J}${r}="CA"),1,IF(${J}${r}="co-FA",0.8,IF(${J}${r}="ETC",0.5,0)))*${M}${r}*0.4`, ps[1]), {fmt:'0.000'});
+        body(ws, r, c+7, F(`${I}${r}*${M}${r}*IF(OR(${J}${r}="FA",${J}${r}="CA"),2,IF(${J}${r}="co-FA",1.5,IF(${J}${r}="ETC",1,0)))*0.6`, ps[0]), {fmt:'0.00'});
+        body(ws, r, c+8, F(`N(${Lc}${r})*IF(OR(${J}${r}="FA",${J}${r}="CA"),1,IF(${J}${r}="co-FA",0.8,IF(${J}${r}="ETC",0.5,0)))*${M}${r}*0.4`, ps[1]), {fmt:'0.00'});
         ws.getCell(r, c+3).dataValidation = {type:'list', allowBlank:true, formulae:['"FA,CA,co-FA,ETC"']};
       });
       slots.forEach(([k, lb, pts]) => { const its = st.patents.filter(x => x.구분 === k);
@@ -1016,14 +1016,14 @@ const RAW = (() => {
     w2.getCell('A2').value = `※ 실시간 내려받기(${stamp}) — 아직 담당자·AI 검증 전 값이 섞여 있을 수 있습니다. 합계·순위는 RAWDATA 수식에서 자동 계산(학번 기준). 장학금액·연차초과는 담당자 입력.`;
     w2.getCell('A2').font = {name:'맑은 고딕', size:9, color:{argb:'FF4F5B54'}};
     ['번호','성명','학번','과정','재학학기','지도교수','연구실적\n(특허,수상)','논문실적','합계','순위','장학금','비고','연차초과','확인 필요 건수'].forEach((h, i) => hdr(w2, 4, i+1, h));
-    const order = S.map(x => [x, total(x)]).sort((a, b) => (b[1][0]+b[1][1]) - (a[1][0]+a[1][1]));
-    const tots = order.map(o => o[1][0]+o[1][1]);
+    const order = S.map(x => [x, total(x).map(r2)]).sort((a, b) => (b[1][0]+b[1][1]) - (a[1][0]+a[1][1]));
+    const tots = order.map(o => r2(o[1][0]+o[1][1]));
     order.forEach(([st, [res, pap]], i) => { const r = 5 + i, rr = rowOf[st.학번], n = nFlags(st);
       body(w2, r, 1, i+1); body(w2, r, 2, st.성명); body(w2, r, 3, F(`RAWDATA!B${rr}`, /^\d+$/.test(st.학번) ? Number(st.학번) : st.학번));
       body(w2, r, 4, st.과정 || null); body(w2, r, 5, st.재학학기 || null); body(w2, r, 6, F(`RAWDATA!C${rr}`, st.지도교수));
-      body(w2, r, 7, F(`RAWDATA!E${rr}`, res), {fmt:'0.000'}); body(w2, r, 8, F(`RAWDATA!F${rr}`, pap), {fmt:'0.000'});
-      body(w2, r, 9, F(`SUM(G${r}:H${r})`, res+pap), {fmt:'0.000', bold:true});
-      body(w2, r, 10, F(`RANK(I${r},$I$5:$I$${4+order.length},0)`, 1 + tots.filter(t => t > res+pap + 1e-12).length));
+      body(w2, r, 7, F(`RAWDATA!E${rr}`, res), {fmt:'0.00'}); body(w2, r, 8, F(`RAWDATA!F${rr}`, pap), {fmt:'0.00'});
+      body(w2, r, 9, F(`ROUND(SUM(G${r}:H${r}),2)`, r2(res+pap)), {fmt:'0.00', bold:true});
+      body(w2, r, 10, F(`RANK(I${r},$I$5:$I$${4+order.length},0)`, 1 + tots.filter(t => t > r2(res+pap) + 1e-9).length));
       body(w2, r, 11, null, {fill:INPUT, fmt:'#,##0'}); body(w2, r, 12, null, {fill:INPUT}); body(w2, r, 13, null, {fill:INPUT});
       body(w2, r, 14, n || '', {fill: n ? FLAG : null, color: n ? 'DC2715' : '000000', bold: !!n}); });
     [6,14,11,9,8,10,11,11,10,7,12,14,9,11].forEach((w, i) => w2.getColumn(i+1).width = w);
@@ -1051,7 +1051,7 @@ const RAW = (() => {
     S.forEach(st => st.papers.forEach(p => { const [cr, iff] = paperScore(p);
       const v = [st.성명, st.학번, p.학생저널명 || p.저널명, p.제목, p.DOI, p.게재일, p.AI게재일, p.학생역할, p.역할, p.학생저자수, p.저자수, p.AI근거,
         p.저널명, p.JCR연도, p.카테고리, p.전체 ? `${p.순위}/${p.전체}` : null, p.전체 ? Math.round(p.순위/p.전체*10000)/100 : null,
-        p.IF, p.다른카테고리, Math.round((cr+iff)*10000)/10000, p.증빙, p.flags.length ? '확인 필요' : '일치'];
+        p.IF, p.다른카테고리, r2(cr+iff), p.증빙, p.flags.length ? '확인 필요' : '일치'];
       v.forEach((x, i) => body(w4, r4, i+1, x === '' ? null : x, {left: [3,4,12,13,15,19,21].includes(i+1), fill: i+1 === 22 ? (p.flags.length ? FLAG : OK) : null}));
       r4++; }));
     [12,11,28,34,22,11,11,9,9,8,8,36,28,8,26,10,8,8,30,10,26,9].forEach((w, i) => w4.getColumn(i+1).width = w); w4.views = [{state:'frozen', xSplit:2, ySplit:1}];
@@ -1067,10 +1067,11 @@ const RAW = (() => {
      `JCR 연도: 평가 시점 최신 JCR (${data.JCR연도})`,
      '특허 = 기준점수 × 기여도 (국내출원 3 / 국내등록 6 / 국제출원 4 / 국제등록 8)',
      '수상 = 국내학회·경진대회 0.5 / 해외학회·경진대회 1.0 (건당)',
+     '소수점: 연구실적·논문실적·합계 점수는 소수 둘째자리에서 반올림(ROUND, 2자리)하고, 순위도 그 값으로 매김 (2026-11-11 담당자 결정)',
      '논문은 Accept 기준 인정, 동일 포상에 대하여 1회 인정',
      '※ CA(교신저자)를 FA와 같게 보는 것은 붙임2에 없는 운영 결정(2026-11) — 기준 개정 시 반영 필요',
      `※ 이 파일은 관리자 화면에서 ${stamp}에 실시간으로 내려받은 것입니다. JCR·역할 검증 전 칸은 학생 입력값이거나 비어 있어 점수가 낮게 나올 수 있습니다.`
-    ].forEach((t, i) => { const c = w5.getCell(i+1, 1); c.value = t; c.font = {name:'맑은 고딕', size:10, bold: i === 0, color:{argb: i === 0 ? 'FF1F3864' : (i === 12 ? 'FFDC2715' : 'FF000000')}}; });
+    ].forEach((t, i) => { const c = w5.getCell(i+1, 1); c.value = t; c.font = {name:'맑은 고딕', size:10, bold: i === 0, color:{argb: i === 0 ? 'FF1F3864' : (i === 13 ? 'FFDC2715' : 'FF000000')}}; });
     w5.getColumn(1).width = 110;
     wb.views = [{activeTab: 0}];
     return {wb, flags: n3, students: S.length, papers: S.reduce((a, x) => a + x.papers.length, 0)};
